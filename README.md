@@ -8,6 +8,8 @@
 
 Vakyu 是面向 Windows 的开源中文输入法，集成本地语音转文字、双向中英跟读、离线词典和个人词频学习。普通语音在本机 CPU 上识别，不需要显卡、API 密钥或云端语音额度；可选的口语跟读使用你自己的翻译 API。
 
+**项目来源：** Vakyu 是在 [Qingjian / 青简](https://github.com/qingjian-team/qingjian) 基础上继续迭代的独立开源项目。感谢青简原作者及主要维护者 [@yenharvey](https://github.com/yenharvey) 和[所有贡献者](https://github.com/qingjian-team/qingjian/graphs/contributors)打下的输入法基础。代码沿用 GPL-3.0-or-later，来源版本与修改说明见 [UPSTREAM.md](UPSTREAM.md)。
+
 Open-source Windows Chinese IME with offline speech-to-text, push-to-talk dictation, and optional English/Chinese reading practice. [English](README.en.md)
 
 [下载安装包](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases) · [详细使用教程](docs/user/getting-started/vakyu-quickstart.md) · [反馈问题](https://github.com/chenjunqi06-glitch/vakyu-voice-input/issues) · [GPL-3.0-or-later](LICENSE)
@@ -89,6 +91,6 @@ Open-source Windows Chinese IME with offline speech-to-text, push-to-talk dictat
 
 ## 来源与许可
 
-Vakyu 基于 [Qingjian / 青简](https://github.com/qingjian-team/qingjian) 发展，感谢上游作者与贡献者。Vakyu 是独立衍生项目，不是青简官方发行版；上游网站提供的安装包也不是本项目安装包。详见[上游与许可说明](UPSTREAM.md)。
+Vakyu 基于 [Qingjian / 青简](https://github.com/qingjian-team/qingjian) 发展，感谢原作者及主要维护者 [@yenharvey](https://github.com/yenharvey)、qingjian-team 与[所有贡献者](https://github.com/qingjian-team/qingjian/graphs/contributors)。Vakyu 是独立衍生项目，不是青简官方发行版；这些署名不表示上游认可或担保 Vakyu。上游网站提供的安装包也不是本项目安装包。详见[上游与许可说明](UPSTREAM.md)。
 
 项目代码采用 **[GNU GPL-3.0-or-later](LICENSE)**。修改和再分发时需履行 GPL 义务，并保留原作者版权及许可声明。每个 Release 提供对应源码包；第三方程序、运行库、词典与语音模型适用各自许可，详见[数据来源](docs/design/landscape.md)和安装包中的 `licenses`。部分内部目录、包名及兼容路径继续沿用 Qingjian，避免破坏升级和现有用户数据。

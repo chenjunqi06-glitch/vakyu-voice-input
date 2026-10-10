@@ -53,7 +53,7 @@ The [Apple Silicon macOS port](apps/macos/README.md) is source work in progress 
 
 ## Source and license
 
-Vakyu is an independent derivative of [Qingjian](https://github.com/qingjian-team/qingjian), with thanks to its authors and contributors. It is not an official Qingjian release. Some internal names and compatibility paths remain unchanged to preserve upgrades and user data.
+Vakyu is an independent project that continues development from [Qingjian](https://github.com/qingjian-team/qingjian). Thanks to Qingjian's original author and principal maintainer [@yenharvey](https://github.com/yenharvey), qingjian-team, and [all contributors](https://github.com/qingjian-team/qingjian/graphs/contributors) for the input-method foundation. It is not an official Qingjian release, and attribution does not imply upstream endorsement or warranty. Some internal names and compatibility paths remain unchanged to preserve upgrades and user data. See [UPSTREAM.md](UPSTREAM.md) for the source snapshot and modification record.
 
 Project code is licensed under **[GPL-3.0-or-later](LICENSE)**. Preserve copyright notices and meet the corresponding-source requirements when distributing modifications or binaries. Releases include corresponding source archives. Third-party libraries, runtimes, speech models, and dictionaries have their own licenses; see the installer’s `licenses` directory and [data sources](docs/design/landscape.md).
 
