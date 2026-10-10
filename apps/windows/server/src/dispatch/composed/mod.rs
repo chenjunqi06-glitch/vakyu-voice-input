@@ -1,0 +1,324 @@
+//! 组句的展示状态：缓冲变化时重查候选并重建 [`Composed`]，云端词异步并入，高亮 / 翻页，按状态生成给 DLL 的帧。
+
+mod state;
+#[cfg(test)]
+mod tests;
+
+use qingjian_core::{Candidate, CandidateLayout, CandidateList, CloudWord, Query};
+use qingjian_platform::protocol::{Frame, PROTOCOL_VERSION, PreeditKind, PreeditSegment};
+use std::time::{Duration, Instant};
+
+pub(super) use self::state::{Composed, TypedKeys};
+use super::Router;
+
+impl Router {
+    /// 缓冲变化后：按 Engine 状态重建 [`Composed`]，发一次云联想请求，归零高亮与整句补全。
+    pub(super) fn recompose(&mut self) {
+        // The previous frame already contains annotated candidates for the old
+        // composition.  Invalidate it before rebuilding the query so repeated
+        // position/poll messages cannot reuse stale text.
+        self.last_shown = None;
+        self.highlight = 0;
+        self.navigated = false;
+        self.sentence = None;
+        if self.engine.composition().is_empty() {
+            self.composed = None;
+            self.cancel_prediction();
+            self.stop_rescoring();
+            return;
+        }
+        self.attach_loaded_model();
+        let query_started = Instant::now();
+        let built = self.engine.query().ok().map(|query| {
+            let elapsed = query_started.elapsed();
+            if elapsed >= Duration::from_millis(8) {
+                tracing::info!(
+                    elapsed_ms = elapsed.as_secs_f64() * 1000.0,
+                    parse_ms = query.timings.parse.as_secs_f64() * 1000.0,
+                    lookup_ms = query.timings.lookup.as_secs_f64() * 1000.0,
+                    rank_ms = query.timings.rank.as_secs_f64() * 1000.0,
+                    input_chars = self.engine.composition().scope().chars().count(),
+                    candidates = query.candidates.items.len(),
+                    "拼音候选查询较慢"
+                );
+            }
+            let (preedit, cursor, typed_keys) = marked_parts(&query);
+            (query.candidates.items.clone(), preedit, cursor, typed_keys)
+        });
+        self.composed = Some(match built {
+            Some((items, preedit, cursor, typed_keys)) => {
+                let layout =
+                    CandidateLayout::new(items, self.config.page_size, self.config.cloud_slots);
+                if self.engine.prediction_enabled() {
+                    self.engine.request_prediction(None, layout.local());
+                }
+                Composed::Candidates {
+                    preedit,
+                    cursor,
+                    typed_keys,
+                    layout,
+                }
+            }
+            None => {
+                self.cancel_prediction();
+                let composition = self.engine.composition();
+                let text = composition.text().to_owned();
+                let cursor = text[..composition.cursor()].chars().count();
+                Composed::Raw { text, cursor }
+            }
+        });
+        self.schedule_rescoring();
+    }
+
+    /// 拉一次云联想结果：云端词并进候选布局，整句补全记下；翻译评审时结果是译文。
+    pub(super) fn poll_prediction(&mut self) {
+        if !self.engine.prediction_enabled() {
+            return;
+        }
+        let Some(prediction) = self.engine.poll_prediction() else {
+            return;
+        };
+        // Cloud words, sentence preview, or English notice may change the page.
+        self.last_shown = None;
+        if self.translation.is_some() {
+            match prediction.sentence {
+                Some(text) => {
+                    if let Some(translation) = self.translation.as_mut() {
+                        translation.result = Some(text);
+                    }
+                }
+                None => {
+                    tracing::info!("翻译选中文字：云端没有给出译文");
+                    self.translation = None;
+                }
+            }
+            return;
+        }
+        if let Some(Composed::Candidates { layout, .. }) = self.composed.as_mut() {
+            let words: Vec<Candidate> = prediction
+                .words
+                .into_iter()
+                .map(CloudWord::into_candidate)
+                .collect();
+            layout.set_cloud(words);
+            let (sentence, english) = split_english_preview(prediction.sentence);
+            self.sentence = sentence;
+            self.notice = english;
+        }
+    }
+
+    pub(super) fn cancel_prediction(&mut self) {
+        if self.engine.prediction_enabled() {
+            self.engine.cancel_prediction();
+        }
+    }
+
+    /// 高亮移动 `delta`，夹在 `[0, 末尾]`，到页边自然换页。
+    pub(super) fn move_highlight(&mut self, delta: isize) {
+        let count = self.candidate_count();
+        if count == 0 {
+            self.highlight = 0;
+            return;
+        }
+        let next = (self.highlight as isize + delta).clamp(0, count as isize - 1) as usize;
+        if next != self.highlight {
+            self.last_shown = None;
+        }
+        self.navigated |= next != self.highlight;
+        self.highlight = next;
+    }
+
+    /// 整页翻 `step`，高亮落到目标页第一个候选。
+    pub(super) fn page(&mut self, step: isize) {
+        let count = self.candidate_count();
+        if count == 0 {
+            self.highlight = 0;
+            return;
+        }
+        let page_size = self.config.page_size;
+        let page_count = count.div_ceil(page_size);
+        let current = (self.highlight / page_size) as isize;
+        let target = (current + step).clamp(0, page_count as isize - 1) as usize;
+        let highlight = (target * page_size).min(count - 1);
+        // 页边界上仍可能把页内高亮移回首项，缓存也必须同步。
+        if highlight != self.highlight {
+            self.last_shown = None;
+        }
+        if target != current as usize {
+            self.navigated = true;
+            self.engine.note_page_turn();
+        }
+        self.highlight = highlight;
+    }
+
+    pub(super) fn candidate_count(&self) -> usize {
+        match &self.composed {
+            Some(Composed::Candidates { layout, .. }) => layout.len(),
+            _ => 0,
+        }
+    }
+
+    /// 候选布局里第 `index` 个（跨页下标）。
+    pub(super) fn layout_candidate(&self, index: usize) -> Option<Candidate> {
+        match &self.composed {
+            Some(Composed::Candidates { layout, .. }) => layout.candidate(index).cloned(),
+            _ => None,
+        }
+    }
+
+    pub(super) fn commit_index(&mut self, index: usize) -> Option<String> {
+        let candidate = self.layout_candidate(index)?;
+        Some(self.engine.commit(&candidate))
+    }
+
+    /// 按当前状态生成一帧：翻译评审优先；没在组句给空帧；否则给高亮所在的那一页。
+    /// 焦点会话的 DLL 比 Server 老时按老协议降级（见 [`Self::downgrade_for_old_dll`]）。
+    /// 把已生成、已标注的帧适配给 DLL。候选窗与 DLL 共用同一次 Core 标注结果，
+    /// 避免每个按键重复查一遍本地释义。
+    pub(super) fn client_frame(&self, mut frame: Frame) -> Frame {
+        self.show_typed_keys(&mut frame);
+        self.downgrade_for_old_dll(&mut frame);
+        frame
+    }
+
+    /// 给 DLL 的帧只管应用输入框：双拼「输入框显示原始按键」开着时换成敲的键，拼音行由 Server 自绘照旧全拼。
+    fn show_typed_keys(&self, frame: &mut Frame) {
+        if self.translation.is_some() {
+            return;
+        }
+        let Some(Composed::Candidates {
+            typed_keys: Some(keys),
+            ..
+        }) = &self.composed
+        else {
+            return;
+        };
+        frame.preedit = vec![PreeditSegment {
+            text: keys.text.clone(),
+            kind: PreeditKind::Typed,
+        }];
+        frame.cursor = keys.cursor;
+    }
+
+    /// 自绘候选窗用的帧：不做老 DLL 降级，码段照常画。
+    pub(super) fn self_drawn_frame(&mut self) -> Frame {
+        // `last_shown` is also the fully annotated frame.  Position updates
+        // and idle polls commonly arrive without any state change; reusing it
+        // avoids rebuilding the page and querying every translation again.
+        if let Some((frame, _)) = &self.last_shown {
+            return frame.clone();
+        }
+        self.raw_frame()
+    }
+
+    /// 协议比 Server 老的 DLL 不认识 `AuxCode` 段，收到会整条消息解析失败；给它的码段降级成普通拼音段。
+    fn downgrade_for_old_dll(&self, frame: &mut Frame) {
+        if self.focused_dll_protocol() >= PROTOCOL_VERSION {
+            return;
+        }
+        for segment in &mut frame.preedit {
+            if segment.kind == PreeditKind::AuxCode {
+                segment.kind = PreeditKind::Typed;
+            }
+        }
+    }
+
+    /// 焦点会话的 DLL 协议版本；没有焦点会话时按最新（不必降级）。
+    fn focused_dll_protocol(&self) -> u32 {
+        self.focused
+            .and_then(|session| self.sessions.get(&session))
+            .map_or(PROTOCOL_VERSION, |info| info.protocol)
+    }
+
+    fn raw_frame(&self) -> Frame {
+        if let Some(translation) = &self.translation {
+            return self.translation_frame(translation);
+        }
+        match &self.composed {
+            None => Frame::default(),
+            Some(Composed::Raw { text, cursor }) => Frame {
+                preedit: vec![PreeditSegment {
+                    text: text.clone(),
+                    kind: PreeditKind::Typed,
+                }],
+                preedit_mode: self.config.preedit,
+                cursor: *cursor,
+                candidates: CandidateList { items: Vec::new() },
+                highlight: usize::MAX,
+                page: 0,
+                page_count: 1,
+                layout: self.config.layout,
+                theme: self.config.theme,
+                aux_code_show: self.config.aux_code_show,
+                sentence: None,
+                notice: self.notice.clone(),
+            },
+            Some(Composed::Candidates {
+                preedit,
+                cursor,
+                layout,
+                ..
+            }) => {
+                let page_size = self.config.page_size;
+                let highlight = self.highlight.min(layout.len().saturating_sub(1));
+                let page = highlight / page_size;
+                let items: Vec<Candidate> = layout
+                    .page(page)
+                    .into_iter()
+                    .filter_map(|cell| cell.candidate().cloned())
+                    .collect();
+                let mut candidates = CandidateList { items };
+                let report = self.engine.annotate(&mut candidates);
+                if report.elapsed >= Duration::from_millis(8) {
+                    tracing::info!(
+                        elapsed_ms = report.elapsed.as_secs_f64() * 1000.0,
+                        candidates = candidates.items.len(),
+                        "候选释义标注较慢"
+                    );
+                }
+                Frame {
+                    preedit: preedit.clone(),
+                    preedit_mode: self.config.preedit,
+                    cursor: *cursor,
+                    candidates,
+                    highlight: highlight - page * page_size,
+                    page,
+                    page_count: layout.pages().max(1),
+                    layout: self.config.layout,
+                    theme: self.config.theme,
+                    aux_code_show: self.config.aux_code_show,
+                    sentence: self.sentence.clone(),
+                    notice: self.notice.clone(),
+                }
+            }
+        }
+    }
+}
+
+/// 一次查询的拼音行分段与光标，以及输入框另显示原始按键时的那一串。
+/// 光标用 Core 的映射：自动补的 `'` 会让显示串比敲的长。
+pub(super) fn marked_parts(query: &Query) -> (Vec<PreeditSegment>, usize, Option<TypedKeys>) {
+    let preedit = query.marked_segments().iter().map(Into::into).collect();
+    let typed_keys = query.shuangpin_raw_preedit.then(|| TypedKeys {
+        text: query.marked_text(),
+        cursor: query.marked_cursor(),
+    });
+    (preedit, query.segments_cursor(), typed_keys)
+}
+
+/// 云端把英文整句预览附在同一协议字段中，Windows 候选窗把它拆成提示行，
+/// 保留中文整句作为 Tab 的上屏内容。
+fn split_english_preview(sentence: Option<String>) -> (Option<String>, Option<String>) {
+    let Some(sentence) = sentence else {
+        return (None, None);
+    };
+    let marker = "\u{1f}QJ_ENGLISH\u{1f}";
+    if let Some((zh, en)) = sentence.split_once(marker) {
+        (
+            (!zh.is_empty()).then(|| zh.to_owned()),
+            (!en.is_empty()).then(|| en.to_owned()),
+        )
+    } else {
+        (Some(sentence), None)
+    }
+}

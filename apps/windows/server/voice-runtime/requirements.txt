@@ -1,0 +1,7 @@
+# 仅安装到随包 Python 的 Lib/site-packages，不修改系统 Python。
+sherpa-onnx==1.13.8
+sherpa-onnx-core==1.13.8
+sounddevice==0.5.5
+cffi==2.1.1
+pycparser==3.0
+numpy==2.2.6

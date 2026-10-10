@@ -1,0 +1,49 @@
+name: Windows and core checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      QINGJIAN_UIACCESS: '0'
+      CARGO_BUILD_JOBS: '2'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: 1.96.0
+          targets: i686-pc-windows-msvc
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+          architecture: x64
+          cache: pip
+          cache-dependency-path: apps/windows/server/voice-runtime/requirements.txt
+      - name: Install pinned voice test dependencies
+        run: python -m pip install --only-binary=:all: --requirement apps/windows/server/voice-runtime/requirements.txt
+      - name: Build Windows components
+        run: cargo build --locked -p qingjian-windows-server -p qingjian-windows-tsf -p qingjian-windows-settings
+      - name: Windows unit tests
+        run: cargo test --locked -p qingjian-windows-server -p qingjian-windows-tsf --lib -- --test-threads=1
+      - name: Settings unit tests
+        run: cargo test --locked -p qingjian-windows-settings --bin qingjian-settings -- --test-threads=1
+      - name: Portable practice and input tests
+        run: cargo test --locked -p qingjian-core -p qingjian-learning -p qingjian-practice -p qingjian-platform -p qingjian-translate -p qingjian-predict
+      - name: Check x86 text service
+        run: cargo check --locked -p qingjian-windows-tsf --target i686-pc-windows-msvc
+      - name: Python voice unit tests without microphone
+        working-directory: apps/windows/server/voice-runtime
+        # tests.py 汇总导入各组测试，避免 discover 再次执行同一组。
+        run: python -B tests.py

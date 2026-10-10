@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Vakyu 使用教程
+    url: https://github.com/chenjunqi06-glitch/vakyu-voice-input/blob/main/docs/user/getting-started/vakyu-quickstart.md
+    about: 安装、语音、跟读、API 配置与常见问题。
+  - name: 隐私与安全问题
+    url: https://github.com/chenjunqi06-glitch/vakyu-voice-input/security/policy
+    about: 不要在公开 Issue 上传 API 密钥、个人词库、日志正文或录音。

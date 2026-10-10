@@ -1,0 +1,32 @@
+{
+  "architecture": "arm64",
+  "python": {
+    "filename": "cpython-3.12.15+20261003-aarch64-apple-darwin-install_only.tar.gz",
+    "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20261003/cpython-3.12.15%2B20261003-aarch64-apple-darwin-install_only.tar.gz",
+    "sha256": "316a463172740e71d8dca1f2730784e325f3f720941137b5d674d5801a632213"
+  },
+  "wheels": [
+    {
+      "filename": "sherpa_onnx-1.13.8-cp312-cp312-macosx_11_0_arm64.whl",
+      "url": "https://files.pythonhosted.org/packages/78/6e/8d9b92e95896ec500084e706529f5637eff797246e74c498922f6aa13a53/sherpa_onnx-1.13.8-cp312-cp312-macosx_11_0_arm64.whl",
+      "sha256": "04b9268c348e9f4bd61315754ad06b02a3c185d3d7770acd8e2dcee9c2e039f9"
+    },
+    {
+      "filename": "sherpa_onnx_core-1.13.8-py3-none-macosx_11_0_arm64.whl",
+      "url": "https://files.pythonhosted.org/packages/8c/2a/2a47b423fe009bbbcb6d7eed7bcba755d6f9ae923b5664c7208128c32d06/sherpa_onnx_core-1.13.8-py3-none-macosx_11_0_arm64.whl",
+      "sha256": "9312bbd46c93e31cecd3abda9cc8e71881d86cc3da3c35c7445ab04025b9fc3e"
+    },
+    {
+      "filename": "numpy-2.2.6-cp312-cp312-macosx_11_0_arm64.whl",
+      "url": "https://files.pythonhosted.org/packages/66/ee/560deadcdde6c2f90200450d5938f63a34b37e27ebff162810f716f6a230/numpy-2.2.6-cp312-cp312-macosx_11_0_arm64.whl",
+      "sha256": "de749064336d37e340f640b05f24e9e3dd678c57318c7289d222a8a2f543e90c"
+    }
+  ],
+  "model": {
+    "filename": "sherpa-onnx-x-asr-480ms-streaming-zipformer-transducer-zh-en-punct-int8-2026-06-05.tar.bz2",
+    "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-x-asr-480ms-streaming-zipformer-transducer-zh-en-punct-int8-2026-06-05.tar.bz2",
+    "sha256": "fa5f63d618e5a01526e275a358bb7772e403f84808a4769fba52cffd8160bf74",
+    "license": "Apache-2.0",
+    "upstream": "https://github.com/Gilgamesh-J/X-ASR"
+  }
+}

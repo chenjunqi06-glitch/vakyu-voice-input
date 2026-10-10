@@ -1,0 +1,55 @@
+name: Vakyu Apple Silicon port
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/macos/**'
+      - 'apps/voice-service/**'
+      - 'crates/qingjian-practice/**'
+      - 'crates/qingjian-learning/**'
+      - 'crates/qingjian-translate/**'
+      - 'apps/windows/server/voice-runtime/**'
+      - '.github/workflows/macos-port.yml'
+permissions:
+  contents: read
+jobs:
+  apple-silicon:
+    runs-on: macos-26
+    env:
+      CARGO_BUILD_JOBS: '2'
+      QINGJIAN_TARGET: aarch64-apple-darwin
+      MACOSX_DEPLOYMENT_TARGET: '13.0'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # v1
+        with:
+          toolchain: 1.96.0
+          targets: aarch64-apple-darwin
+      - name: Check Apple Silicon runner
+        run: test "$(uname -m)" = arm64
+      - name: Fetch verified input method product data
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/release/data-fetch.sh
+      - name: Check portable voice and IMK
+        run: cargo test --locked -p vakyu-voice-service -p qingjian-practice -p qingjian-macos
+      - name: Check Swift companion
+        run: swift test --package-path apps/macos/companion --jobs 2
+      - name: Prepare runtime and test protocol
+        run: |
+          python3 apps/macos/scripts/prepare_voice_runtime.py
+          target/macos-voice-runtime/arm64/python/bin/python3 apps/macos/voice-runtime/tests.py
+      - name: Build complete package
+        run: bash apps/macos/scripts/bundle.sh --pkg
+      - name: Verify signatures and resources
+        run: |
+          codesign --verify --deep --strict target/Vakyu.app
+          python3 apps/macos/scripts/check_port.py --bundle target/Vakyu.app
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: vakyu-macos-arm64-development
+          path: target/pkg/vakyu-*-macos-arm64.pkg
+          if-no-files-found: error

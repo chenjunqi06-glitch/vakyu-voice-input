@@ -1,0 +1,101 @@
+name: Vakyu 问题报告
+description: 安装、语音、跟读、输入或设置功能不正常
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        标题请用一句话写清现象，例如「微信中按左 Alt 有识别文字，但未填入输入框」。
+
+        感谢反馈。请尽量填全，尤其是复现步骤和版本号，能省去来回追问的时间。
+        本表用于 Vakyu，请不要把问题提交到青简上游。公开测试版当前面向 Windows x64；macOS 为移植验证阶段。
+        请勿上传 API 密钥、私人输入记录、个人词库或未经检查的完整日志。
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 已搜索过[现有问题](https://github.com/chenjunqi06-glitch/vakyu-voice-input/issues)（包括已关闭的），没有重复
+          required: true
+        - label: 已查过[Vakyu 使用教程](https://github.com/chenjunqi06-glitch/vakyu-voice-input/blob/main/docs/user/getting-started/vakyu-quickstart.md)，里面没有答案
+          required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 平台
+      options:
+        - Windows
+        - macOS（移植开发版）
+        - Linux（继承的输入法代码）
+    validations:
+      required: true
+  - type: input
+    id: os_version
+    attributes:
+      label: 系统版本
+      description: 例如 macOS 26.1、Windows 11 24H2、Windows 10 22H2
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+  - type: input
+    id: vakyu_version
+    attributes:
+      label: Vakyu 版本
+      description: 「设置 → 关于」页里的版本号，或下载的安装包文件名
+      placeholder: 版本号或完整安装包文件名
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: 出问题时所在的应用
+      description: 如果只在某些应用里出现，写出应用名和版本；所有应用都出现就写「全部」
+      placeholder: 企业微信 4.1.x / Visual Studio Code / 全部
+  - type: dropdown
+    id: schema
+    attributes:
+      label: 出问题的功能
+      options:
+        - 全拼
+        - 双拼
+        - 普通语音（默认左 Alt）
+        - 英语跟读（默认右 Ctrl + 右 Alt）
+        - 中文跟读（默认右 Ctrl + 右 Alt）
+        - 安装 / 升级 / 卸载
+        - 设置 / 托盘 / 其他
+        - 不确定
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 一步一步写，包括敲了哪些键。能稳定复现请注明；偶发的也请写大致频率。
+      placeholder: |
+        1. 打开 Vakyu 后台，点击软件中的文本框
+        2. 按住左 Alt，说一句话后松开
+        3. 预期填入文字，实际……
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 可以贴截图或录屏。
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 运行日志
+      description: |
+        日志为可选项。先提供版本、系统、目标软件和错误提示即可。
+        若附日志，请先检查并删除 API 密钥、私人消息、用户名和其他敏感信息；不要上传整个用户数据目录。
+        数据位置见 https://github.com/chenjunqi06-glitch/vakyu-voice-input/blob/main/docs/user/help/data-and-logs.md 。
+      render: text

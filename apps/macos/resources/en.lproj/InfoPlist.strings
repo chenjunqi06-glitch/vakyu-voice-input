@@ -1,0 +1,5 @@
+/* Name shown in the input source list and the input method menu */
+CFBundleName = "Vakyu";
+CFBundleDisplayName = "Vakyu";
+/* Input mode display name, keyed by the mode ID in Info.plist */
+"app.qingjian.inputmethod.Hans" = "Vakyu";

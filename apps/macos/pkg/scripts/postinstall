@@ -1,0 +1,23 @@
+#!/bin/sh
+# 安装器以 root 运行；注册和语音启动项必须属于当前桌面用户。
+set -u
+APP="/Library/Input Methods/Vakyu.app"
+BIN="$APP/Contents/MacOS/qingjian-macos"
+pkill -x qingjian-macos 2>/dev/null || true
+user="$(stat -f%Su /dev/console 2>/dev/null || true)"
+if [ -n "$user" ] && [ "$user" != root ] && [ "$user" != loginwindow ]; then
+    uid="$(id -u "$user")"
+    if launchctl asuser "$uid" sudo -H -u "$user" "$BIN" --register; then
+        echo "Vakyu：已为 $user 注册并启用输入源"
+    else
+        echo "Vakyu：请在系统设置 → 键盘 → 输入法中添加 Vakyu"
+    fi
+    if [ -f "$APP/Contents/Resources/install_voice_agent.sh" ]; then
+        launchctl asuser "$uid" sudo -H -u "$user" /bin/sh \
+          "$APP/Contents/Resources/install_voice_agent.sh" "$APP" || \
+          echo "Vakyu：语音自动启动未完成，请打开应用包内 VakyuVoice.app"
+    fi
+else
+    echo "Vakyu：无登录桌面用户，登录后手动添加输入法并打开语音组件"
+fi
+exit 0

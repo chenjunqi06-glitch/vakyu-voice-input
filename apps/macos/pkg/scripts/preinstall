@@ -1,0 +1,15 @@
+#!/bin/sh
+# 升级前退出本用户的语音宿主；只删除身份已核实的旧名称应用包。
+set -u
+user="$(stat -f%Su /dev/console 2>/dev/null || true)"
+if [ -n "$user" ] && [ "$user" != root ] && [ "$user" != loginwindow ]; then
+    uid="$(id -u "$user")"
+    launchctl bootout "gui/$uid/app.vakyu.voice" >/dev/null 2>&1 || true
+fi
+pkill -x VakyuVoice 2>/dev/null || true
+pkill -x qingjian-macos 2>/dev/null || true
+LEGACY="/Library/Input Methods/Qingjian.app"
+if [ -d "$LEGACY" ] && [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$LEGACY/Contents/Info.plist" 2>/dev/null)" = app.qingjian.inputmethod ]; then
+    rm -rf "$LEGACY"
+fi
+exit 0

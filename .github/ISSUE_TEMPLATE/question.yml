@@ -1,0 +1,38 @@
+name: Vakyu 使用疑问
+description: 不确定是用法问题还是缺陷，先问一下
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        标题请用一句话写清要问什么，例如「如何只开启跟读翻译，不开启打字联想」。
+
+        安装、语音输入、双向跟读、快捷键与 API 设置见 [Vakyu 使用教程](https://github.com/chenjunqi06-glitch/vakyu-voice-input/blob/main/docs/user/getting-started/vakyu-quickstart.md)。
+        请勿公开 API 密钥或私人输入内容。
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 已搜索过[现有问题](https://github.com/chenjunqi06-glitch/vakyu-voice-input/issues)（包括已关闭的），没有重复
+          required: true
+        - label: 已查过[Vakyu 使用教程](https://github.com/chenjunqi06-glitch/vakyu-voice-input/blob/main/docs/user/getting-started/vakyu-quickstart.md)，里面没有答案
+          required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 平台
+      options:
+        - Windows
+        - macOS（移植开发版）
+        - Linux
+        - 与平台无关
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: 问题
+      description: 想做什么、试了什么、结果如何。
+    validations:
+      required: true

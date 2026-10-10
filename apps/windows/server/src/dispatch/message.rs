@@ -1,0 +1,264 @@
+//! 按消息类型分派：会话开关、按键、轮询、失焦上屏、选区 / 光标矩形 / 中英模式的通知。
+
+use qingjian_platform::protocol::{
+    ClientMessage, Frame, KeyEvent, KeyOutcome, PROTOCOL_VERSION, SESSION_OPENED_SINCE,
+    ServerMessage, SessionId, VoiceUpdate,
+};
+
+use super::Router;
+use super::key::Effect;
+use super::session::SessionInfo;
+
+impl Router {
+    pub(super) fn dispatch(&mut self, message: ClientMessage) -> Option<ServerMessage> {
+        match message {
+            ClientMessage::SetPracticeShortcut { shortcut } => {
+                #[cfg(windows)]
+                let result = self.save_practice_shortcut(&shortcut);
+                #[cfg(not(windows))]
+                let result: Result<(), String> = {
+                    let _ = shortcut;
+                    Err("当前平台不支持 Windows 全局快捷键".to_owned())
+                };
+                Some(ServerMessage::Update {
+                    session: SessionId(0),
+                    frame: Frame::default(),
+                    voice: result.err().map(|message| VoiceUpdate::Error { message }),
+                })
+            }
+            ClientMessage::PrepareUpdate => {
+                let ready = self.prepare_voice_update();
+                self.flush_learning();
+                Some(ServerMessage::Update {
+                    session: SessionId(0),
+                    frame: Frame::default(),
+                    voice: (!ready).then(|| VoiceUpdate::Error {
+                        message: "语音仍在停止中，本次更新未获准，请稍后重试".to_owned(),
+                    }),
+                })
+            }
+            ClientMessage::OpenSession {
+                session,
+                app,
+                protocol,
+            } => {
+                tracing::debug!(?session, app, protocol, "会话打开");
+                if protocol != PROTOCOL_VERSION {
+                    tracing::warn!(
+                        ?session,
+                        app,
+                        dll = protocol,
+                        server = PROTOCOL_VERSION,
+                        "DLL 与 Server 的协议版本不同（应用还没重启、用着旧 DLL？），照常服务"
+                    );
+                }
+                // 同一会话重开（DLL 断线重连）：从干净状态起。
+                self.voice_delivery.close(session);
+                self.cancel_voice_for(session);
+                if self.focused == Some(session) {
+                    self.reset_composition();
+                    self.focused = None;
+                }
+                self.sessions.insert(
+                    session,
+                    SessionInfo {
+                        app,
+                        private: false,
+                        protocol,
+                        voice_sequence: None,
+                        connection: None,
+                    },
+                );
+                // 按键行为设置回一次，让 DLL 不必自己读配置文件。**只回给会读这条回包的 DLL**：
+                // 更老的 DLL 的 `open` 是只写不读，多回一条会被它当成下一次 `Poll` 的应答而报错，
+                // 那条连接就废了（老 DLL 在没重启的应用里还会活很久）。它们从 `ModeSync` 那一拍
+                // 也能拿到同一份（新字段它直接忽略），只是慢一拍。
+                (protocol >= SESSION_OPENED_SINCE).then(|| ServerMessage::SessionOpened {
+                    session,
+                    input: self.input_settings(),
+                })
+            }
+            ClientMessage::Key { session, event } => Some(self.handle_key(session, event)),
+            ClientMessage::Poll { session } => Some(self.handle_poll(session)),
+            ClientMessage::VoiceStart { session } => Some(self.start_voice(session)),
+            ClientMessage::VoiceStop { session } => Some(self.stop_voice(session)),
+            ClientMessage::VoiceCancel { session } => {
+                self.cancel_legacy_voice_for(session);
+                None
+            }
+            ClientMessage::VoiceControl {
+                session,
+                sequence,
+                action,
+            } => Some(self.control_voice(session, sequence, action)),
+            ClientMessage::Commit { session } => {
+                self.cancel_voice_for(session);
+                let text = self.commit_raw_for(session);
+                tracing::debug!(?session, ?text, "焦点离开，结束组句");
+                Some(ServerMessage::Committed { session, text })
+            }
+            ClientMessage::Surrounding { session, text } => {
+                tracing::trace!(?session, chars = text.chars().count(), "收到光标前文");
+                self.set_surrounding(session, text);
+                None
+            }
+            ClientMessage::Privacy { session, private } => {
+                if private {
+                    self.cancel_voice_for(session);
+                }
+                tracing::debug!(?session, private, "输入框私密状态");
+                self.set_privacy(session, private);
+                None
+            }
+            ClientMessage::Selection {
+                session,
+                request,
+                text,
+                rect,
+            } => Some(self.handle_selection(session, request, text, rect)),
+            ClientMessage::PositionCandidates { session, rect } => {
+                self.position_candidates(session, rect);
+                None
+            }
+            ClientMessage::HideCandidates { session } => {
+                // 组句在 DLL 侧结束（应用终止组句 / 翻译评审失焦）：只收窗口；缓冲留给下一键的 Commit 清。
+                if self.focused == Some(session) {
+                    self.end_translation();
+                    self.hide_candidate_window();
+                }
+                None
+            }
+            ClientMessage::ModeChanged { session, english } => {
+                tracing::debug!(?session, english, "中英模式");
+                self.handle_mode_changed(english);
+                None
+            }
+            ClientMessage::SyncMode { session } => {
+                self.handle_ime_active();
+                Some(ServerMessage::ModeSync {
+                    session,
+                    english: Some(self.english),
+                    input: self.input_settings(),
+                    indicator: self.indicator_state(),
+                })
+            }
+            ClientMessage::VoiceDeliveryPoll {
+                session,
+                process,
+                thread,
+                report,
+            } => {
+                let supported = self
+                    .sessions
+                    .get(&session)
+                    .is_some_and(|info| info.protocol >= 8)
+                    && self.external_voice
+                    && self.config.voice_input;
+                let command = supported
+                    .then(|| self.voice_delivery.poll(session, process, thread, report))
+                    .flatten();
+                self.handle_ime_active();
+                Some(ServerMessage::VoiceDelivery {
+                    session,
+                    input: self.input_settings(),
+                    english: self.english,
+                    indicator: self.indicator_state(),
+                    command,
+                })
+            }
+            ClientMessage::ImeSwitched { session } => {
+                self.cancel_voice_for(session);
+                tracing::debug!(?session, "切成了别的输入法");
+                self.handle_ime_switched();
+                None
+            }
+            ClientMessage::Indicator { session, command } => {
+                tracing::debug!(?session, ?command, "任务栏图标菜单");
+                self.handle_indicator(command);
+                None
+            }
+            ClientMessage::CloseSession { session } => {
+                self.voice_delivery.close(session);
+                self.cancel_voice_for(session);
+                self.sessions.remove(&session);
+                if self.focused == Some(session) {
+                    self.reset_composition();
+                    self.focused = None;
+                }
+                self.flush_learning();
+                tracing::debug!(?session, "会话关闭");
+                None
+            }
+        }
+    }
+
+    fn handle_key(&mut self, session: SessionId, event: KeyEvent) -> ServerMessage {
+        self.ensure_focus(session);
+        if self.notice.take().is_some() {
+            self.last_shown = None;
+        }
+        if self.translation.is_some() {
+            return self.handle_translation_review(session, &event);
+        }
+        if self.engine.composition().is_empty()
+            && self.engine.prediction_enabled()
+            && self.matches_translate_combo(&event)
+        {
+            self.selection_seq += 1;
+            self.pending_selection = Some(self.selection_seq);
+            tracing::debug!(
+                ?session,
+                request = self.selection_seq,
+                "翻译选中文字：请 DLL 读选区"
+            );
+            return ServerMessage::RequestSelection {
+                session,
+                request: self.selection_seq,
+            };
+        }
+        let (commit, outcome) = match self.apply_key(&event) {
+            Effect::Changed(commit) => {
+                self.recompose();
+                (commit, KeyOutcome::Consumed)
+            }
+            Effect::Navigated => (None, KeyOutcome::Consumed),
+            Effect::Passthrough => (None, KeyOutcome::Passthrough),
+        };
+        self.poll_prediction();
+        // 自绘窗吃未降级的帧；发给 DLL 的那份按老协议降级（见 composed 的 current_frame）
+        let shown = self.self_drawn_frame();
+        self.reconcile_candidates(&shown);
+        let frame = self.client_frame(shown);
+        ServerMessage::KeyResult {
+            session,
+            outcome,
+            commit,
+            frame,
+        }
+    }
+
+    /// 云联想轮询：聚焦会话拉一次异步结果回最新一帧，否则回空帧。释义兜底与本地整句模型也借这个节拍收。
+    fn handle_poll(&mut self, session: SessionId) -> ServerMessage {
+        self.tick();
+        let learned = self.engine.poll_glosses();
+        if learned > 0 {
+            tracing::info!(learned, "释义兜底写入个人释义表");
+            // A newly learned gloss changes the annotated candidate page.
+            self.last_shown = None;
+        }
+        let frame = if self.focused == Some(session) {
+            self.poll_prediction();
+            let shown = self.self_drawn_frame();
+            self.reconcile_candidates(&shown);
+            self.client_frame(shown)
+        } else {
+            Frame::default()
+        };
+        let voice = self.poll_voice(session);
+        ServerMessage::Update {
+            session,
+            frame,
+            voice,
+        }
+    }
+}

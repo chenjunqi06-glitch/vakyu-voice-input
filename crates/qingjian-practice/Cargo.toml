@@ -1,0 +1,19 @@
+[package]
+name = "qingjian-practice"
+description = "平台无关的双向语音跟读会话与放行门禁"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+qingjian-core.workspace = true
+qingjian-learning.workspace = true
+qingjian-translate.workspace = true
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
