@@ -54,6 +54,7 @@ def check_payload(root):
     assert pe_machine(root / "qingjian-server.exe") == 0x8664
     assert pe_subsystem(root / "qingjian-server.exe") == 2, "后台必须是无控制台的 GUI 程序"
     assert pe_subsystem(root / "voice-runtime/python/pythonw.exe") == 2
+    assert (root / "voice-runtime/app/dictation_context.py").stat().st_size > 0
     assert pe_machine(root / "qingjian-settings.exe") == 0x8664
     assert pe_machine(root / f"qingjian_tsf-{manifest['version']}.dll") == 0x8664
     assert pe_machine(root / f"qingjian_tsf-{manifest['version']}-x86.dll") == 0x14C

@@ -6,6 +6,7 @@ mod event;
 mod process;
 mod runtime;
 mod session;
+mod vocabulary;
 mod worker;
 
 #[cfg(test)]

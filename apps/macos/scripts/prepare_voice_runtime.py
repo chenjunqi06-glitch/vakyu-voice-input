@@ -94,7 +94,7 @@ def prepare(destination, cache):
         app.mkdir()
         for filename in ("external_main.py", "channel.py", "pcm.py"):
             shutil.copy2(RUNTIME / filename, app / filename)
-        for filename in ("recognition.py", "practice_context.py", "bpe_vocab.py", "audio_meter.py"):
+        for filename in ("recognition.py", "practice_context.py", "dictation_context.py", "bpe_vocab.py", "audio_meter.py"):
             shutil.copy2(SHARED / filename, app / filename)
         shutil.copy2(RUNTIME / "sources.json", staging / "sources.json")
         shutil.copy2(RUNTIME / "README.md", staging / "README.md")

@@ -26,6 +26,7 @@ fn typo_edges_in_the_lattice_correct_legal_but_unlikely_pinyin() {
     assert!(engine.composition().is_empty());
     assert_eq!(engine.learner().typo_count("gan", "guan"), 1);
     assert_eq!(engine.learner().choice_weight("meiganxi", "没关系"), 1);
+    assert_eq!(engine.learner().choice_weight("meiguanxi", "没关系"), 1);
     // 整个删掉、同一段拼音改选 美感：敲错的记录退回
     for _ in 0..3 {
         engine.note_backspace();
@@ -41,6 +42,7 @@ fn typo_edges_in_the_lattice_correct_legal_but_unlikely_pinyin() {
         .unwrap();
     engine.commit(&meigan);
     assert_eq!(engine.learner().typo_count("gan", "guan"), 0);
+    assert_eq!(engine.learner().choice_weight("meiguanxi", "没关系"), 0);
     assert_eq!(engine.composition().text(), "xi");
     // 原样读得通：没 + 感谢 是正常整句，不动
     engine.set_input("meiganxie");
@@ -111,6 +113,8 @@ fn fuzzy_hits_consume_the_typed_syllables() {
     engine.commit(&zhishi);
     assert!(engine.composition().is_empty());
     assert_eq!(engine.learner().typo_count("zi", "zhi"), 0);
+    assert_eq!(engine.learner().choice_weight("zishi", "知识"), 1);
+    assert_eq!(engine.learner().choice_weight("zhishi", "知识"), 1);
 }
 
 /// 接受整段一处编辑的纠正也记个人敲错表：敲的那段字母对纠正后的音节。
@@ -128,6 +132,7 @@ fn accepted_whole_string_correction_feeds_the_typo_table() {
     let first = query.candidates.items[0].clone();
     engine.commit(&first);
     assert_eq!(engine.learner().typo_count("hoo", "hao"), 1);
+    assert_eq!(engine.learner().choice_weight("nihaoma", "你好吗"), 1);
     // 只选到 你 就上屏：没吃到编辑处，不算接受
     engine.set_input("nihooma");
     let ni = engine

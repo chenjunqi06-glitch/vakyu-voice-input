@@ -22,6 +22,7 @@ const REQUIRED_FILES: &[&str] = &[
     "app/audio_meter.py",
     "app/bpe_vocab.py",
     "app/practice_context.py",
+    "app/dictation_context.py",
     "models/streaming/tokens.txt",
 ];
 

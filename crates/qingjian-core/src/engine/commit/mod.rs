@@ -158,6 +158,18 @@ impl Engine {
                 self.whole_scope()
             }
         };
+        // 简拼、未打完的拼音或纠错选词，也应教会该读音的全拼；只记所选候选的音节，不猜多音字的其他读音。
+        let canonical_input = if candidate.kind == CandidateKind::Chinese {
+            let canonical = candidate.syllables.concat();
+            if !canonical.is_empty() && canonical != input {
+                self.learner.record_choice(&canonical, &candidate.text);
+                Some(canonical)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
         self.apply_retraction(&input, &candidate.text);
         self.recording.clear();
         for (typed, intended) in &typos {
@@ -268,6 +280,7 @@ impl Engine {
                 text: candidate.text.clone(),
                 chars: traditional_text.chars().count(),
                 input,
+                canonical_input,
                 chosen: matches!(
                     candidate.kind,
                     CandidateKind::Chinese | CandidateKind::Code | CandidateKind::Cloud
@@ -360,6 +373,9 @@ impl Engine {
         if let Some(chosen) = &last.chosen {
             self.learner.unrecord(chosen);
             self.learner.unrecord_choice(&last.input, chosen);
+            if let Some(canonical) = &last.canonical_input {
+                self.learner.unrecord_choice(canonical, chosen);
+            }
         }
         for transition in &last.transitions {
             self.learner.unrecord_transition(

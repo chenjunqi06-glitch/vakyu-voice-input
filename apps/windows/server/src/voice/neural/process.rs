@@ -8,6 +8,7 @@ use std::sync::mpsc::{self, Receiver, SyncSender};
 
 use super::command::HelperCommand;
 use super::event::HelperEvent;
+use super::vocabulary::DictationVocabulary;
 use qingjian_core::Language;
 
 const MAX_EVENT_BYTES: u64 = 1_048_576;
@@ -61,7 +62,10 @@ impl HelperProcess {
         std::thread::Builder::new()
             .name("miracle-voice-send".to_owned())
             .spawn(move || {
-                while let Ok(command) = command_rx.recv() {
+                // 文件检查只在写管道线程进行，按键线程仍只投递有界命令。
+                let mut vocabulary = DictationVocabulary::new(qingjian_platform::dirs::user_dir());
+                while let Ok(mut command) = command_rx.recv() {
+                    vocabulary.apply(&mut command);
                     let result = serde_json::to_writer(&mut stdin, &command)
                         .map_err(std::io::Error::other)
                         .and_then(|()| stdin.write_all(b"\n"))
@@ -112,6 +116,7 @@ impl HelperProcess {
                 generation,
                 language: language.map(Language::code),
                 practice_text: practice_text.map(str::to_owned),
+                dictation_vocabulary: None,
             })
             .map_err(|_| "中文语音控制无响应，请重新按住 Alt 重试".to_owned())
     }

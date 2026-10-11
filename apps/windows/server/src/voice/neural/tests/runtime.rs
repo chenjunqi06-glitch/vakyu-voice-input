@@ -96,3 +96,13 @@ fn no_runtime_retains_uninstalled_behavior() {
         assert_eq!(select_root(None, None), None);
     });
 }
+
+#[test]
+fn missing_dictation_context_requires_runtime_repair() {
+    with_roots(|executable, _| {
+        let root = executable.parent().unwrap().join("voice-runtime");
+        write_fixture(&root);
+        std::fs::remove_file(root.join("app/dictation_context.py")).unwrap();
+        assert!(!is_complete(&root));
+    });
+}

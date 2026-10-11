@@ -14,6 +14,8 @@ Open-source Windows Chinese IME with offline speech-to-text, push-to-talk dictat
 
 [下载安装包](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases) · [详细使用教程](docs/user/getting-started/vakyu-quickstart.md) · [反馈问题](https://github.com/chenjunqi06-glitch/vakyu-voice-input/issues) · [GPL-3.0-or-later](LICENSE)
 
+> **最新版本：[0.1.5 Preview 2](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.2)** · 改善通用中文词频排序与中英混说识别，完整 Windows 安装包已同步更新。
+
 ## 有什么亮点
 
 - **按住左 Alt 就能说**：在文本框中口述，实时预览识别文字与麦克风音量，松开后填入原输入框。支持连续口述与中途停顿，不设五分钟自动截止，也不会自动发送消息。

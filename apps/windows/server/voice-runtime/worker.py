@@ -6,6 +6,7 @@ import sys
 import threading
 
 from capture import Capture
+from dictation_context import limit_vocabulary
 
 
 def start_options(request):
@@ -18,7 +19,8 @@ def start_options(request):
     language = request.get("language", "en" if practice_text else "zh")
     if language not in ("zh", "en"):
         raise ValueError("unsupported recognition language")
-    return practice_text, language
+    vocabulary = None if practice_text else limit_vocabulary(request.get("dictation_vocabulary"))
+    return practice_text, language, vocabulary
 
 
 def run(models, emit):
@@ -34,8 +36,8 @@ def run(models, emit):
                     generation = int(request.get("generation", 0))
                     if command not in ("start", "stop", "cancel", "shutdown"):
                         continue
-                    practice_text, language = start_options(request) if command == "start" else (None, None)
-                    capture.command(command, generation, practice_text, language)
+                    options = start_options(request) if command == "start" else (None, None, None)
+                    capture.command(command, generation, *options)
                     if command == "shutdown":
                         return
                 except (ValueError, KeyError, TypeError):
@@ -76,8 +78,9 @@ def run(models, emit):
                 if not capture.requested(generation):
                     continue
                 try:
-                    practice_text, language = payload
-                    session = Recognition(recognizer, practice_text=practice_text, language=language)
+                    practice_text, language, vocabulary = payload
+                    session = Recognition(recognizer, practice_text=practice_text, language=language,
+                                          dictation_vocabulary=vocabulary)
                     capture.open(generation)
                 except Exception:
                     capture.cancel_if_current(generation)

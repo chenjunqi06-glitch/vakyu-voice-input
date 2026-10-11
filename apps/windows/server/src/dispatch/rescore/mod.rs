@@ -152,6 +152,7 @@ impl Router {
         self.attach_loaded_model();
         self.advance_rescoring();
         self.poll_config_reload();
+        self.flush_learning_if_due();
     }
 
     /// 防抖到点就发请求；在等结果就收一次，收到了重查并重画当前页。

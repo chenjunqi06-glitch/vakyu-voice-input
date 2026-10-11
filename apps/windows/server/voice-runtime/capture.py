@@ -38,7 +38,7 @@ class Capture:
         self.pending_release = []
         self.meter = LevelMeter(emit, self.requested)
 
-    def command(self, command, generation, practice_text=None, language=None):
+    def command(self, command, generation, practice_text=None, language=None, dictation_vocabulary=None):
         with self.lock:
             if command == "start":
                 self.meter.clear()
@@ -47,7 +47,7 @@ class Capture:
                 self.held = True
                 self.meter.begin(generation)
                 language = language or ("en" if practice_text else "zh")
-                self.events.put(("start", generation, (practice_text, language)))
+                self.events.put(("start", generation, (practice_text, language, dictation_vocabulary)))
             elif command == "stop" and generation == self.generation:
                 self.meter.clear()
                 self.held = False

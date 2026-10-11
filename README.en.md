@@ -10,6 +10,8 @@
 
 Vakyu combines push-to-talk speech-to-text with language practice based on what you actually want to say. Speech recognition runs locally on the CPU. No GPU or API key is needed for ordinary dictation; optional sentence translation uses your own OpenAI-compatible API provider.
 
+> **Latest preview: [0.1.5 Preview 2](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.2)** · Improved personal Chinese candidate ranking and mixed Chinese/English dictation, with an updated full Windows installer.
+
 ## What makes it useful
 
 - Hold **Left Alt** to dictate Chinese into an editable text field. Release to insert the result. It never presses Send.

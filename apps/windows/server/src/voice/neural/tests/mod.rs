@@ -6,3 +6,4 @@ mod long_recording;
 mod practice;
 mod process;
 mod runtime;
+mod vocabulary;

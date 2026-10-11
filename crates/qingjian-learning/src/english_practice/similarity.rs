@@ -11,7 +11,7 @@ fn normalized_similarity(expected: &[char], heard: &[char]) -> u8 {
         return 100;
     }
     let width = expected.len().max(heard.len());
-    let distance = levenshtein(&expected, &heard);
+    let distance = levenshtein(expected, heard);
     ((width.saturating_sub(distance) * 100) / width).min(100) as u8
 }
 

@@ -8,6 +8,7 @@ mod code;
 mod composed;
 mod config;
 mod key;
+mod learning;
 mod message;
 mod reload;
 mod rescore;
@@ -45,7 +46,7 @@ pub use self::status::{
 };
 use self::translate::Translation;
 
-/// 学习数据落盘间隔（与 macOS 壳一致）；Server 没有定时器，借消息节拍看时间。
+/// 学习数据落盘间隔；消息处理和已有后台节拍共用，不新增定时线程。
 const LEARNING_FLUSH_INTERVAL: Duration = Duration::from_secs(60);
 
 /// 同一时刻只有一个应用有键盘焦点，所以一个 Engine 持当前组句；焦点切到别的会话时先清掉上一个的残留。
@@ -238,9 +239,7 @@ impl Router {
     /// 处理一条消息；`None` 表示不用回话。到点顺带把学习数据落盘。
     pub fn handle(&mut self, message: ClientMessage) -> Option<ServerMessage> {
         let response = self.dispatch(message);
-        if self.last_flush.elapsed() >= LEARNING_FLUSH_INTERVAL {
-            self.flush_learning();
-        }
+        self.flush_learning_if_due();
         response
     }
 

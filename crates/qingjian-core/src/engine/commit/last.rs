@@ -13,6 +13,9 @@ pub struct LastCommit {
     /// 消耗掉的那段拼音（按输入串记选择用的键）。
     pub input: String,
 
+    /// 简拼 / 前缀选择额外记的完整拼音；与 `input` 相同时不重复记录。
+    pub canonical_input: Option<String>,
+
     /// 记过一次选择次数（`Learner::record`）与输入串选择（`record_choice`）的词；整句上屏没有。
     pub chosen: Option<String>,
 
@@ -39,6 +42,7 @@ impl LastCommit {
             text: text.to_owned(),
             chars: text.chars().count(),
             input: String::new(),
+            canonical_input: None,
             chosen: None,
             transitions: Vec::new(),
             typos: Vec::new(),
@@ -53,8 +57,13 @@ impl LastCommit {
         self.chars > 0 && self.erased == self.chars
     }
 
-    /// 再打的这段拼音是不是同一段：完全相同，或是它的前缀（重打后只选了前面一个短词）。
+    /// 再打的拼音是否与原输入相同或是其前缀，或与所选词的完整拼音相同。
     pub fn same_input(&self, input: &str) -> bool {
-        !input.is_empty() && self.input.starts_with(input)
+        !input.is_empty()
+            && (self.input.starts_with(input)
+                || self
+                    .canonical_input
+                    .as_ref()
+                    .is_some_and(|canonical| canonical == input))
     }
 }

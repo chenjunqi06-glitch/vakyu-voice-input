@@ -39,6 +39,7 @@ fn both_recognition_directions_reach_helper_with_scoped_language() {
                             generation,
                             practice_text: practice_text.map(str::to_owned),
                             language: language.map(Language::code),
+                            dictation_vocabulary: None,
                         })
                         .unwrap(),
                     );
@@ -166,6 +167,7 @@ fn ordinary_protocol_omits_practice_text_and_practice_preserves_it() {
         generation: 7,
         language: Some("zh"),
         practice_text: None,
+        dictation_vocabulary: None,
     })
     .unwrap();
     assert!(ordinary.get("practice_text").is_none());
@@ -174,6 +176,7 @@ fn ordinary_protocol_omits_practice_text_and_practice_preserves_it() {
         generation: 8,
         language: Some("en"),
         practice_text: Some(EXPECTED.to_owned()),
+        dictation_vocabulary: None,
     })
     .unwrap();
     assert_eq!(practice["practice_text"], EXPECTED);

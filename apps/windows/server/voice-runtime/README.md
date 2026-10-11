@@ -14,7 +14,9 @@
 
 标准输入是 JSONL：`{"command":"start|stop|cancel|shutdown","generation":1}`。标准输出是 JSONL，`event` 为 `ready`、`started`、`interim`、`final`、`error`、`stopped`、`cancelled`；除 ready 和启动错误外都携带 generation，interim/final 的 text 为整个会话累计文字。
 
-`start` 可携带 `language:"zh"|"en"`。英语学习是中文原话→英文跟读，中文学习是英文原话→中文跟读；普通语音保持中文默认值。语言与提示随 generation 隔离，停止命令不带提示。两种语言共用已安装的中英模型与两条 CPU 推理线程，切换方向不下载模型、不增加后台进程，也不调用显卡。模型输出按原样累计，英语口述不会套中文后处理，中文跟读不会通过英文过滤规则丢字；重复口述和重读不会在识别层被删掉。
+`start` 可携带 `language:"zh"|"en"`。英语学习是中文原话→英文跟读，中文学习是英文原话→中文跟读；普通语音默认 `zh`，但它不把中英模型限制为只识别中文。语言与提示随 generation 隔离，停止命令不带提示。两种语言共用已安装的中英模型与两条 CPU 推理线程，切换方向不下载模型、不增加后台进程，也不调用显卡。模型输出按原样累计，英语口述不会套中文后处理，中文跟读不会通过英文过滤规则丢字；重复口述和重读不会在识别层被删掉。
+
+普通口述的 `start` 可携带 `dictation_vocabulary` 英文词汇字符串，例如 `"deadline Codex"`。`dictation_context.py` 为声学解码提供弱词汇提示，降低中文句子夹英文时丢词或选中音近汉字的概率，不把已有中文结果替换成英文。父进程提供常用软件/工作词汇，并在开启个人学习时附加已提交的常用英文词；本进程不读取输入框、剪贴板或个人文件，不访问网络。仅保留长 2–48 字母的英文词（允许词内撇号），按小写去重，排除单字母；输入最多 8192 字且丢弃截断半词，最多 96 个独立词、4096 字热词，每词及大小写变体 boost 固定为 0.8。若大小写变体超过预算，先保留每个词的原始形式，再用余量补变体，避免基础词变体挤掉个人专名。提示只属于本轮 stream，不累加重复词的权重；若存在 `practice_text` 则完全忽略口述词表，保持原跟读提示。旧消息不带该字段、空/无效词表或模型不支持提示时，均使用无提示识别。此方式不增加模型、副本推理或 API 消耗，也不能保证所有口音及未知专名都识别正确。
 
 跟读的 `start` 可额外携带 `practice_text`；普通口述不携带。当前已校验的 X-ASR 词表可由 `bpe_vocab.py` 生成不含用户内容的 `bpe.vocab`，发行包预生成后随模型安装，运行仅复用。若旧安装缺表且模型目录只读，写入 `%LOCALAPPDATA%/Qingjian/voice-cache/<tokens SHA256>/`，不要求管理员权限；macOS 使用本用户 `~/Library/Caches/Vakyu/voice/`。单一 `modified_beam_search` 模型为每个 stream 独立启用提示：独立英文词 boost 1.0、短专名 1.2，至多 96 个独立词、12 个短语、4096 字热词。提示只在当前轮次内存中存在，不强制解码整个目标句。未知词表、缓存不可写或初始化失败回退无提示识别。
 
@@ -32,4 +34,4 @@ Windows 下必须先导入 NumPy / sherpa-onnx 原生依赖，再创建阻塞读
 
 分发包仅使用标准 Windows PortAudio 后端，不包含 ASIO 变体。录音模块清除子进程继承的 `SD_ENABLE_ASIO`，避免其他音频软件的环境变量使新安装无法加载音频库；不会修改系统环境设置。
 
-离线验证（不开麦）：`python/python.exe app/main.py --wave test.wav --models models`；默认设备只读检查：`python/python.exe app/main.py --devices`；控制竞态回归：`python/python.exe app/tests.py -v`。
+离线验证（不开麦）：`python/python.exe app/main.py --wave test.wav --models models`；默认设备只读检查：`python/python.exe app/main.py --devices`；控制竞态回归：`python/python.exe app/tests.py -v`，包括 `dictation_tests.py` 的混说提示边界、普通口述/跟读隔离、取消隔离和失败回退。真实准确率应另用固定 WAV 做有/无提示对比，并保留纯中文、纯英文及静音回归；合成语音的通过不代表真实用户口音已验收。

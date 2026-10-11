@@ -311,6 +311,7 @@ impl Engine {
             text: text.to_owned(),
             chars: traditional_text.chars().count(),
             input,
+            canonical_input: None,
             chosen: None,
             transitions: std::mem::take(&mut self.recording),
             typos: Vec::new(),

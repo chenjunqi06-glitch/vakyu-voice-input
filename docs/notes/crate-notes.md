@@ -72,6 +72,7 @@ TSV 解析、查询与生成工具把 `lue` / `nue` 统一成 `lve` / `nve`。
   个人敲错表（`user-typos.tsv`，接受过的 (敲的, 要的) 音节对，词图敲错边与整段纠错的代价按它打折）与个人 n-gram（`user-ngram.tsv`，Core `sentence::UserNgram`，
   二元 + 三元在线计数，整句转换与词级排序里与静态模型插值；Tab 接受的云端整句按 `sentence::segment_text` 切词后也记；
   连着选出的两个词记够次数自动造词进用户词，一段拼音分几次选完的合成词记两次也造）。
+  Chinese 词候选通过简拼、前缀、纠错或模糊音上屏时，另外按该候选自身 `syllables.concat()` 记录完整拼音选择；与原输入相同则不重复计数。`LastCommit.canonical_input` 让退格纠正同步撤销两种拼写，避免跨简拼残留误选；不推断其他多音读法，不改变词级排序规则或为整句推断词写强选择偏好。
 - `InputLog`：输入日志（`input-log.jsonl`，每次上屏一行：敲的键、切分、看到的前几个候选、选了第几个、来源、纠错、撤销，
   Core `InputLogger` trait 的落盘实现，`[general] input_log` 缺省开，只写本机，给离线回归评测与个人模型用）。
 - `UsageStats`：输入统计（`usage.tsv`，按天记汉字 / 中文词 / 英文词 / 上屏次数，Core `UsageMeter` trait 的实现，Engine 每次上屏 `Usage::of_text` + 按来源定词数，
@@ -79,7 +80,7 @@ TSV 解析、查询与生成工具把 `lue` / `nue` 统一成 `lve` / `nve`。
 - `VocabularyBook`：词汇记录（`user-vocab.tsv`，Core `VocabularyTracker` trait 的实现：学习语言的每条译词看到过几轮 / 上屏过 / ⌥+数字 打出过几次；Core 私密输入统一跳过曝光和提交写入，但仍可读取已有记录用于排序和生词标记；
   Engine `annotate` 据此填 `Sense::fresh`，看到轮次不到 `FRESH_UNTIL` = 3 的译词壳里画橙色；「看到」按上屏那一刻屏幕上那一页算，壳每次画完 `Engine::note_displayed` 告知当前页）。
 - 各表落盘走 Core `storage::write_atomic`（临时文件 + fsync + 改名），加载按行容错（坏行警告跳过，真读不了壳退回内存学习），
-  壳激活期间每 60 秒 `Engine::flush_learning`；IMK 回调边界 `imk::catch_panic` 拦 panic、缓冲区字母原样上屏（见 architecture.md「崩溃不丢」）。
+  壳激活期间每 60 秒 `Engine::flush_learning`；Windows 的消息处理与已有后台 `tick` 共用到期检查，停止打字后仍保存最后一批学习，无变化的表不重写。IMK 回调边界 `imk::catch_panic` 拦 panic、缓冲区字母原样上屏（见 architecture.md「崩溃不丢」）。
 
 ## crates/qingjian-predict
 
@@ -397,6 +398,8 @@ DLL 不读文件、不查 mtime。`SessionOpened` 只回过协议版本对得上
 Unix socket 用共享长度前缀与 Frame（当前公共版本 8，与 `PROTOCOL_VERSION` 同步，Fcitx5 插件里写死在 `miracle.cpp` 的 OpenSession）；插件复用一条连接，每个上下文独立会话。Linux v3 扩展逐会话握手、确认 Sensitive/Password/Disable 后接受按下/释放、焦点和点击事实。
 候选回报绑定连接代次、上下文和服务端帧序号，仅当前聚焦页的有效释义进入 `note_displayed`，不把生成帧算作已展示。
 `[general] preedit` 使用已有 `both` / `inline` / `window`；没有新增 Linux 自绘配置。详见 [linux-fcitx5.md](linux-fcitx5.md)。
+
+普通中英口述另用 `start.dictation_vocabulary`：Windows helper 写管道线程组合 69 个已验证的常用英文词与 `user-english.tsv` 高频前 24 词，总上限 96 词 / 4096 字节。配置与词表按大小及修改时间缓存，有界读取；`general.learning` 关闭、损坏或读失败时下一轮不用个人部分，缺省配置沿用学习开启。Python `dictation_context.py` 清洗、去重及限制词长，每词弱加分 0.8，仅影响声学解码，不替换转写文本；跟读和控制命令不继承口述词表。仍是原模型、两条 CPU 线程，无新增云请求。此词表读取仅在后台线程进行，不阻塞按键回调。
 
 语音识别提示与音量：`VoiceManager::start_practice` 通过 `StartPractice` 与 helper `start.practice_text` 传本轮目标译句。Python 用单一 `modified_beam_search` 模型和每轮弱热词（独立词 1.0、短专名 1.2，上限 96 词/12 短语/4096 字）；`bpe_vocab.py` 仅对固定 SHA256 的 X-ASR tokens 生成分词表，失败回退普通识别。普通 Start、Stop、Cancel 均不携带上一轮提示。PortAudio 实际 RMS/peak 经底噪与对数映射为 0–100，独立音量线程在录音中最多 30Hz 发 generation-scoped `level`、未录音时阻塞休眠；不进入 VoiceUpdate/TSF 协议。Rust `AudioMeter` 核对录音代次/held，300ms 无新样本归零，SAPI 回退使用 SPEI_SR_AUDIO_LEVEL。控制线程约60ms更新UI音量，浮窗五柱只用实测历史，文字不变仍重绘；停止/隐藏/阶段变化清零。跟读浮窗展示最近识别片段，仅在内存，不写日志；Interim文字变化即刷新，即使匹配进度未改变。
 

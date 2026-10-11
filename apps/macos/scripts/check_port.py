@@ -44,6 +44,7 @@ def check_bundle(bundle):
     runtime = nested / "voice-runtime"
     required += [runtime / "python/bin/python3", runtime / "sources.json",
                  runtime / "app/external_main.py", runtime / "app/recognition.py",
+                 runtime / "app/dictation_context.py",
                  runtime / "app/channel.py", runtime / "app/pcm.py",
                  runtime / "models/streaming/encoder.int8.onnx",
                  runtime / "models/streaming/decoder.onnx",

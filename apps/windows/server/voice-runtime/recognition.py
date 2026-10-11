@@ -8,6 +8,7 @@ import numpy as np
 import sherpa_onnx
 
 from bpe_vocab import prepare_bpe_vocab
+from dictation_context import dictation_hotwords
 from practice_context import practice_hotwords
 
 
@@ -68,7 +69,7 @@ def create_recognizer(models: Path):
 
 
 class Recognition:
-    def __init__(self, recognizer, practice_text=None, language=None):
+    def __init__(self, recognizer, practice_text=None, language=None, dictation_vocabulary=None):
         self.recognizer = recognizer
         self.language = language or ("en" if practice_text else "zh")
         if self.language not in ("zh", "en"):
@@ -77,6 +78,8 @@ class Recognition:
         if not isinstance(chinese_tokens, frozenset):
             chinese_tokens = None
         hints = practice_hotwords(practice_text, self.language, chinese_tokens)
+        if not practice_text:
+            hints = dictation_hotwords(dictation_vocabulary)
         if hints and getattr(recognizer, "practice_context_enabled", False) is True:
             try:
                 self.stream = recognizer.create_stream(hints)

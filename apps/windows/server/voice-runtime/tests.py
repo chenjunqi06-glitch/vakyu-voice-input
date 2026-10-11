@@ -13,6 +13,7 @@ from capture import Capture
 from recognition import join_segments
 from recognition_tests import RecognitionTests
 from context_tests import PracticeContextTests, VocabTests
+from dictation_tests import DictationContextTests
 from meter_tests import AudioLevelTests, LevelMeterTests
 import worker
 
@@ -62,7 +63,7 @@ class CaptureTests(unittest.TestCase):
         self.capture.command("cancel", 7)
         self.capture.command("start", 8)
         self.assertEqual([self.events.get_nowait() for _ in range(3)], [
-            ("start", 7, ("Chen Junqi", "en")), ("cancel", 7, None), ("start", 8, (None, "zh")),
+            ("start", 7, ("Chen Junqi", "en", None)), ("cancel", 7, None), ("start", 8, (None, "zh", None)),
         ])
         self.assertFalse(self.capture.requested(7))
         self.assertTrue(self.capture.requested(8))
@@ -73,12 +74,12 @@ class CaptureTests(unittest.TestCase):
             (8, {"language": "zh", "practice_text": "我今天去吃饭"}),
             (9, {}),
         ]:
-            text, language = worker.start_options(request)
-            self.capture.command("start", generation, text, language)
-            self.assertEqual(self.events.get_nowait(), ("start", generation, (text, language)))
+            options = worker.start_options(request)
+            self.capture.command("start", generation, *options)
+            self.assertEqual(self.events.get_nowait(), ("start", generation, options))
             self.assertTrue(self.capture.requested(generation))
-        self.assertEqual(worker.start_options({}), (None, "zh"))
-        self.assertEqual(worker.start_options({"practice_text": "Hello"}), ("Hello", "en"))
+        self.assertEqual(worker.start_options({}), (None, "zh", None))
+        self.assertEqual(worker.start_options({"practice_text": "Hello"}), ("Hello", "en", None))
         with self.assertRaises(ValueError):
             worker.start_options({"language": "unsupported"})
 
@@ -136,7 +137,7 @@ class CaptureTests(unittest.TestCase):
         self.capture.stream = stream
         self.capture.command("stop", 7)
         self.assertEqual([self.events.get_nowait() for _ in range(3)], [
-            ("start", 7, (None, "zh")), ("audio", 7, "tail"), ("stop", 7, None),
+            ("start", 7, (None, "zh", None)), ("audio", 7, "tail"), ("stop", 7, None),
         ])
 
     def test_abort_error_still_closes_before_acknowledging(self):
