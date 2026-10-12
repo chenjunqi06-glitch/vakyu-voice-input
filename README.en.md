@@ -10,7 +10,7 @@
 
 Vakyu combines push-to-talk speech-to-text with language practice based on what you actually want to say. Speech recognition runs locally on the CPU. No GPU or API key is needed for ordinary dictation; optional sentence translation uses your own OpenAI-compatible API provider.
 
-> **Latest preview: [0.1.5 Preview 2](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.2)** · Improved personal Chinese candidate ranking and mixed Chinese/English dictation, with an updated full Windows installer.
+> **Latest preview: [0.1.5 Preview 3](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.3)** · Improved voice triggers, shortcut saving, and background stability, with an updated full Windows installer.
 
 ## What makes it useful
 
@@ -51,7 +51,15 @@ Local speech recognition does not upload or save microphone recordings. Dictiona
 
 Ordinary editable fields are the primary target. Password fields, secure desktops, elevated applications, games, and some custom controls may not work. Only one interactive Windows session is supported. Windows ARM and 32-bit Windows are unsupported by this installer.
 
-The [Apple Silicon macOS port](apps/macos/README.md) is source work in progress and still needs native builds and real-device validation. There is no iOS version. The inherited Linux input-method code does not imply that Vakyu's voice features work on Linux.
+The [Apple Silicon macOS port](apps/macos/README.md) is source work in progress and still needs native builds and real-device validation. This repository's input method has no iOS version. The inherited Linux input-method code does not imply that Vakyu's voice features work on Linux.
+
+## About the Vakyu team
+
+We build proactive, interactive AI language-learning experiences that bring practice into everyday communication.
+
+Our mobile product, **Vakyu AI language learning**, is available on Google Play, with its Apple App Store submission under review. This repository maintains the open-source **Vakyu Voice Input** project; its supported platforms and installation instructions are documented above. The mobile product's store availability does not mean this repository offers a mobile keyboard package.
+
+Website: [vakyu.com](https://vakyu.com) · Business inquiries on WeChat: **cyx121a**
 
 ## Source and license
 

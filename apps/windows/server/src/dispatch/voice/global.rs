@@ -22,7 +22,22 @@ impl Router {
             .global_voice
             .as_ref()
             .ok_or_else(|| "语音后台尚未就绪，原快捷键保持不变；请重启 Vakyu 后重试".to_owned())?;
-        global.save_shortcut(shortcut, path)?;
+        let started = std::time::Instant::now();
+        let result = global.save_shortcut(shortcut, path);
+        match &result {
+            Ok(()) => tracing::info!(
+                shortcut = %shortcut.label(),
+                elapsed_ms = started.elapsed().as_millis(),
+                "跟读快捷键已保存"
+            ),
+            Err(message) => tracing::warn!(
+                shortcut = %shortcut.label(),
+                elapsed_ms = started.elapsed().as_millis(),
+                %message,
+                "跟读快捷键保存失败"
+            ),
+        }
+        result?;
         self.config.voice_practice_shortcut = shortcut;
         Ok(())
     }

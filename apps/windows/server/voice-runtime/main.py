@@ -1,4 +1,4 @@
-"""Miracle 语音进程入口；标准输入输出只传会话控制与识别事件。"""
+"""Vakyu 语音进程入口；标准输入输出只传会话控制与识别事件。"""
 
 import argparse
 import json

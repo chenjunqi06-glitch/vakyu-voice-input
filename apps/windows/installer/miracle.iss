@@ -111,6 +111,9 @@ Type: files; Name: "{app}\data\model\model.safetensors"
 Type: files; Name: "{app}\data\model\config.json"
 Type: files; Name: "{app}\data\model\vocab.json"
 Type: filesandordirs; Name: "{app}\codes"
+; 旧安装包混入的 macOS 附属文件（._*），不是词库，只会让每次启动报错。
+Type: files; Name: "{app}\data\generated\dicts\._*"
+Type: files; Name: "{app}\data\generated\codes\._*"
 
 [UninstallDelete]
 Type: files; Name: "{app}\qingjian_tsf-*.dll"

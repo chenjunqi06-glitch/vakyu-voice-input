@@ -19,6 +19,7 @@ pub fn list(dir: &Path) -> Vec<(String, PathBuf)> {
     let mut files: Vec<(String, PathBuf)> = entries
         .filter_map(Result::ok)
         .map(|entry| entry.path())
+        .filter(|path| !crate::extra_dictionaries::is_apple_double(path))
         .filter_map(|path| {
             (path.extension()?.to_str()? == EXTENSION).then(|| {
                 let stem = path.file_stem()?.to_str()?.to_owned();

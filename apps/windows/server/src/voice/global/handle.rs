@@ -65,12 +65,14 @@ impl GlobalVoice {
         path: std::path::PathBuf,
     ) -> Result<(), String> {
         let (reply, result) = mpsc::channel();
+        let timeout = Duration::from_secs(3);
+        let deadline = std::time::Instant::now() + timeout;
         self.commands
-            .send(Command::SaveShortcut(shortcut, path, reply))
+            .send(Command::SaveShortcut(shortcut, path, reply, deadline))
             .map_err(|_| "语音后台已退出，快捷键未保存".to_owned())?;
         result
-            .recv_timeout(Duration::from_secs(3))
-            .map_err(|_| "语音后台未及时确认保存，请稍后重试".to_owned())?
+            .recv_timeout(timeout)
+            .map_err(|_| "语音后台未及时确认保存，原快捷键保持不变，请稍后重试".to_owned())?
     }
 
     pub fn prepare_update(&self) -> bool {

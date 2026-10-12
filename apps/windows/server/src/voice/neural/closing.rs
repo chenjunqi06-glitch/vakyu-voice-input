@@ -37,7 +37,7 @@ impl CloseWatchdog {
 
     pub fn check(&self, now: Instant) -> Result<(), String> {
         if self.pending.values().any(|deadline| now >= *deadline) {
-            Err("麦克风关闭无响应，已终止语音组件，请稍后重新按住 Alt".to_owned())
+            Err("麦克风关闭无响应，已终止语音组件，请稍后重新按住语音键".to_owned())
         } else {
             Ok(())
         }

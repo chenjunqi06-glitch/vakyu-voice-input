@@ -37,8 +37,11 @@ fn load_config() -> Config {
     }
 }
 
-/// 读密钥：工作目录 `.env`，再叠加 `%APPDATA%\Qingjian\.env`；不覆盖已有环境变量。
+/// 读密钥：`%APPDATA%\Qingjian\.env`；不覆盖已有环境变量。
+/// 工作目录（及其上级目录）的 `.env` 只在开发构建里读：装机后工作目录在 Program Files，
+/// 往上找会读到 `C:\.env` 这类任何本机用户都能放的文件。
 fn load_env() {
+    #[cfg(debug_assertions)]
     let _ = dotenvy::dotenv();
     if let Some(env_file) = user_dir().map(|dir| dir.join(".env")) {
         let _ = dotenvy::from_path(&env_file);

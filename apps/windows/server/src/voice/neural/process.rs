@@ -118,13 +118,13 @@ impl HelperProcess {
                 practice_text: practice_text.map(str::to_owned),
                 dictation_vocabulary: None,
             })
-            .map_err(|_| "中文语音控制无响应，请重新按住 Alt 重试".to_owned())
+            .map_err(|_| "语音控制无响应，请重新按住语音键重试".to_owned())
     }
 
     pub fn check_alive(&mut self) -> Result<(), String> {
         match self.child.try_wait() {
             Ok(None) => Ok(()),
-            _ => Err("中文语音组件意外退出，请重新按住 Alt 重试".to_owned()),
+            _ => Err("语音组件意外退出，请重新按住语音键重试".to_owned()),
         }
     }
 }

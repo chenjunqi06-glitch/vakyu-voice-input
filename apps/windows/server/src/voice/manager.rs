@@ -151,7 +151,7 @@ impl VoiceManager {
                 self.commands = None;
                 self.updates = None;
                 VoiceUpdate::Error {
-                    message: "语音线程已退出，请再次按住 Alt 重试".to_owned(),
+                    message: "语音线程已退出，请再次按住语音键重试".to_owned(),
                 }
             }
         }

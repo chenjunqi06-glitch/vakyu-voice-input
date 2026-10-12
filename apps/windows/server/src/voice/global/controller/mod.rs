@@ -132,7 +132,12 @@ pub(super) fn run(
                 }
             }
             Ok(Command::PracticeAction(action)) => controller.practice_action(action),
-            Ok(Command::SaveShortcut(shortcut, path, reply)) => {
+            Ok(Command::SaveShortcut(shortcut, path, reply, deadline)) => {
+                if Instant::now() > deadline {
+                    tracing::warn!("跟读快捷键保存请求在语音线程排队过久，未执行");
+                    let _ = reply.send(Err("快捷键保存请求已过期".to_owned()));
+                    continue;
+                }
                 let result = controller.hook.save_shortcut(shortcut, path);
                 if result.is_ok() {
                     controller.cancel();

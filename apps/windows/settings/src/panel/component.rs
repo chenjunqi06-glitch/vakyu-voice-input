@@ -255,10 +255,10 @@ impl Component for Settings {
             Message::PracticeShortcutSaved(result) => {
                 self.hotkey.saving = false;
                 match result {
-                    Ok(shortcut) => {
+                    Ok(saved) => {
                         self.reload();
                         self.hotkey.candidate = None;
-                        self.hotkey.message = format!("已保存 {}，立即生效。", shortcut.label());
+                        self.hotkey.message = saved.message();
                         self.hotkey.failed = false;
                     }
                     Err(message) => {

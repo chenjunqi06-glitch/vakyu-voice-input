@@ -1,5 +1,6 @@
 """模型常驻而音频按会话存在；会话取消后丢弃队列中的旧结果。"""
 
+import collections
 import json
 import queue
 import sys
@@ -7,6 +8,42 @@ import threading
 
 from capture import Capture
 from dictation_context import limit_vocabulary
+
+# 识别跟不上采集时，一次最多把这么多秒的积压音频合并送进模型，追上实时又不长时间不出中间结果。
+MAX_MERGED_SECONDS = 1.0
+
+# 一轮录音里偶发的少量输入过载（每次只丢几十毫秒）继续识别；持续过载才中止，避免丢音变成错误文字。
+MAX_OVERFLOWS = 5
+
+
+def next_event(events, pending):
+    """先取合并音频时多读出来的那一条，保持事件顺序。"""
+    return pending.popleft() if pending else events.get()
+
+
+def merge_audio(payload, generation, events, pending):
+    """把队列里紧随其后、同一代次同一采样率的音频块合并；不丢样本、不跨代次、不越过其他事件。"""
+    rate, samples = payload
+    if pending:
+        return rate, samples
+    chunks, total = [samples], len(samples)
+    limit = int(rate * MAX_MERGED_SECONDS)
+    while total < limit:
+        try:
+            event = events.get_nowait()
+        except queue.Empty:
+            break
+        kind, event_generation, event_payload = event
+        if kind != "audio" or event_generation != generation or event_payload[0] != rate:
+            pending.append(event)
+            break
+        chunks.append(event_payload[1])
+        total += len(event_payload[1])
+    if len(chunks) == 1:
+        return rate, samples
+    import numpy as np
+
+    return rate, np.concatenate(chunks)
 
 
 def start_options(request):
@@ -65,16 +102,18 @@ def run(models, emit):
     active = None
     session = None
     latest = ""
+    pending = collections.deque()
+    overflows = 0
     try:
         while capture.alive:
-            kind, generation, payload = events.get()
+            kind, generation, payload = next_event(events, pending)
             if kind == "shutdown":
                 break
             if kind == "cancel":
                 active, session = None, None
                 continue
             if kind == "start":
-                active, session, latest = generation, None, ""
+                active, session, latest, overflows = generation, None, "", 0
                 if not capture.requested(generation):
                     continue
                 try:
@@ -89,12 +128,16 @@ def run(models, emit):
             if generation != active or capture.generation != generation:
                 continue
             if kind == "overflow":
-                # 丢音不可静默变成错误文字。
+                overflows += 1
+                if overflows < MAX_OVERFLOWS:
+                    print("麦克风输入短暂过载，继续识别", file=sys.stderr, flush=True)
+                    continue
+                # 持续丢音不可静默变成错误文字。
                 capture.cancel_if_current(generation)
-                emit("error", generation, message="麦克风输入过载，请关闭占用音频的应用后重试")
+                emit("error", generation, message="麦克风输入持续过载，请关闭占用音频的应用后重试")
                 continue
             if kind == "audio" and session is not None:
-                text = session.accept(*payload)
+                text = session.accept(*merge_audio(payload, generation, events, pending))
                 if capture.generation == generation and capture.held and text != latest:
                     latest = text
                     emit("interim", generation, text=text)
@@ -105,6 +148,6 @@ def run(models, emit):
                 active, session = None, None
     except Exception:
         if active is not None:
-            emit("error", active, message="中文语音识别中断，请重新按住 Alt")
+            emit("error", active, message="语音识别中断，请重新按住语音键再试")
     finally:
         capture.command("shutdown", 0)

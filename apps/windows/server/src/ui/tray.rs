@@ -182,7 +182,11 @@ impl TrayIcon {
         let add = |id, text, flags| {
             let _ = unsafe { AppendMenuW(menu, MF_STRING | flags, id, &HSTRING::from(text)) };
         };
-        add(ID_VOICE, "语音输入（按住 Alt）", checked(state.voice_input));
+        add(
+            ID_VOICE,
+            "语音输入（按住语音键）",
+            checked(state.voice_input),
+        );
         add(
             ID_PRACTICE,
             "启用跟读练习 / Reading practice",

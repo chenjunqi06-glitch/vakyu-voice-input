@@ -72,13 +72,15 @@ impl HookThread {
         path: std::path::PathBuf,
     ) -> Result<(), String> {
         let (reply, result) = mpsc::channel();
+        let timeout = std::time::Duration::from_secs(2);
+        let deadline = std::time::Instant::now() + timeout;
         self.commands
-            .send(Command::SaveShortcut(shortcut, path, reply))
+            .send(Command::SaveShortcut(shortcut, path, reply, deadline))
             .map_err(|_| "全局语音按键线程已退出".to_owned())?;
         self.wake()?;
         result
-            .recv_timeout(std::time::Duration::from_secs(2))
-            .map_err(|_| "快捷键保存未及时确认，请检查后台状态".to_owned())?
+            .recv_timeout(timeout)
+            .map_err(|_| "快捷键保存未及时确认，原快捷键保持不变，请稍后重试".to_owned())?
     }
 
     fn wake(&self) -> Result<(), String> {

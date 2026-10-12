@@ -175,7 +175,13 @@ fn run_inner(
                         };
                         (effective, reply, result, true)
                     }
-                    Command::SaveShortcut(shortcut, path, reply) => {
+                    Command::SaveShortcut(shortcut, path, reply, deadline) => {
+                        if Instant::now() > deadline {
+                            // 调用方已超时并告诉用户「未保存」；此时再落盘会出现界面说失败、实际却改了的情况。
+                            tracing::warn!("跟读快捷键保存请求已过期，未执行");
+                            let _ = reply.send(Err("快捷键保存请求已过期".to_owned()));
+                            continue;
+                        }
                         let config = desired_config;
                         let result = if config.key.conflicts_with_practice(shortcut) {
                             Err("该快捷键与普通语音转文字按键冲突，请更换其中一个按键".to_owned())

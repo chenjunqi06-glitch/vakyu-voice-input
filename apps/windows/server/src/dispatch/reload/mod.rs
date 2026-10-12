@@ -226,6 +226,7 @@ impl Router {
             self.config.voice_practice_demo,
             self.config.voice_practice_similarity,
             self.config.voice_practice_name_similarity,
+            self.config.voice_practice_shortcut,
         ) != (
             config.shortcut.voice_input,
             config.shortcut.voice_key,
@@ -235,6 +236,8 @@ impl Router {
             config.shortcut.voice_practice_demo,
             config.shortcut.voice_practice_similarity.min(100),
             config.shortcut.voice_practice_name_similarity.min(100),
+            // 设置程序在后台不回应时会直接写配置，热加载也要让跟读快捷键生效。
+            config.shortcut.voice_practice_shortcut,
         ) || (config.shortcut.voice_english_practice
             && self.voice_translation != config.predict);
         self.config = RouterConfig::from(config);

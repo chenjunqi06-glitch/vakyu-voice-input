@@ -69,7 +69,7 @@ pub(crate) enum Message {
     PracticeShortcutCaptured(u64, Result<qingjian_platform::PracticeShortcut, String>),
     PracticeShortcutSave,
     PracticeShortcutReset,
-    PracticeShortcutSaved(Result<qingjian_platform::PracticeShortcut, String>),
+    PracticeShortcutSaved(Result<super::hotkey::Saved, String>),
     VoiceKey(Option<usize>),
     VoiceKeyReset,
     VoiceHold(Option<usize>),

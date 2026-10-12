@@ -57,7 +57,7 @@ impl Session {
 
     pub fn timeout(&self, now: Instant) -> Option<&'static str> {
         if self.finishing.is_some_and(|deadline| now >= deadline) {
-            Some("语音结果处理超时，请重新按住 Alt 录音")
+            Some("语音结果处理超时，请重新按住语音键录音")
         } else if !self.started
             && self.finishing.is_none()
             && self

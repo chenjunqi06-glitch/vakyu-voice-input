@@ -4,7 +4,8 @@
     [switch]$Plan,
     [string]$InvocationId,
     [string]$RuntimeRoot,
-    [switch]$Apply
+    [switch]$Apply,
+    [switch]$AllowDebugServer
 )
 $ErrorActionPreference = 'Stop'
 $installRoot = 'C:\Program Files\Qingjian'
@@ -30,6 +31,22 @@ function File-Hash([string]$Path) {
         return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
     }
     return ''
+}
+
+# PE 可选头里的 Subsystem：2 = GUI（Release 构建的 Server），3 = 控制台（Debug 构建）。
+function Pe-Subsystem([string]$Path) {
+    $stream = [IO.File]::OpenRead($Path)
+    try {
+        $reader = New-Object IO.BinaryReader($stream)
+        $stream.Position = 0x3c
+        $offset = $reader.ReadInt32()
+        $stream.Position = $offset
+        if ($reader.ReadUInt32() -ne 0x4550) { throw "Not a PE file: $Path" }
+        $stream.Position = $offset + 24 + 68
+        return [int]$reader.ReadUInt16()
+    } finally {
+        $stream.Dispose()
+    }
 }
 
 function Runtime-Target([string]$Name) {
@@ -66,6 +83,10 @@ function Build-Plan {
         if ($source.sha256 -notmatch '^[a-fA-F0-9]{64}$') { throw "Invalid SHA256 for $role" }
         $sourcePath = (Resolve-Path -LiteralPath $source.path).Path
         if ((File-Hash $sourcePath) -ne $source.sha256) { throw "Source hash mismatch: $role" }
+        # Debug 构建的 Server 候选窗每帧慢 10–30 倍，装上去会让输入明显卡顿；默认拒绝。
+        if ($role -eq 'server' -and -not $AllowDebugServer -and (Pe-Subsystem $sourcePath) -ne 2) {
+            throw 'Server is a debug (console) build. Build with: cargo build --release -p qingjian-windows-server (or pass -AllowDebugServer).'
+        }
         $currentPath = switch ($role) {
             'server' { Join-Path $installRoot 'qingjian-server.exe' }
             'settings' { Join-Path $installRoot 'qingjian-settings.exe' }
@@ -124,10 +145,12 @@ if (-not $Apply) {
         throw 'Run the updater from a normal PowerShell window; installation elevation is automatic'
     }
     $InvocationId = [Guid]::NewGuid().ToString('N')
-    $setup = Start-Process -FilePath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ArgumentList @(
+    $elevatedArguments = @(
         '-NoProfile','-ExecutionPolicy','Bypass','-File',('"'+$PSCommandPath+'"'),
         '-ManifestPath',('"'+$manifestFile+'"'),'-ResultPath',('"'+$resultFile+'"'),'-InvocationId',$InvocationId,'-RuntimeRoot',('"'+$RuntimeRoot+'"'),'-Apply'
     )
+    if ($AllowDebugServer) { $elevatedArguments += '-AllowDebugServer' }
+    $setup = Start-Process -FilePath 'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe' -Verb RunAs -WindowStyle Hidden -Wait -PassThru -ArgumentList $elevatedArguments
     if (Test-Path -LiteralPath $resultFile) {
         $result = Get-Content -LiteralPath $resultFile -Raw | ConvertFrom-Json
         if ($result.invocationId -ne $InvocationId) { throw 'Installer did not produce a result for this invocation' }

@@ -1,6 +1,7 @@
 //! 设置页的英语跟读快捷键录入状态，后台确认保存后才更新界面中的有效键。
 
 mod capture;
+mod saved;
 mod service;
 
 use std::sync::{
@@ -11,6 +12,7 @@ use std::sync::{
 use qingjian_platform::PracticeShortcut;
 
 pub(super) use capture::record;
+pub(crate) use saved::Saved;
 pub(super) use service::save;
 
 #[derive(Default)]

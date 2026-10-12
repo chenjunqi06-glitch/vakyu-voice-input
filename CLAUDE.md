@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Vakyu 是基于 [Qingjian / 青简](https://github.com/qingjian-team/qingjian) 的独立开源衍生项目，沿用 GPL-3.0-or-later 与上游版权声明。Core 平台无关，各平台负责系统集成。
 当前发布目标为 Windows 10 22H2 / Windows 11 原生 x64 测试版，新增本地语音与双向中英跟读；Apple Silicon macOS 移植尚需原生构建及真机验收，iOS 暂无版本。Linux 保留上游 Fcitx5 输入法代码，新增语音功能未验证。
-仓库中的旧版本、路线和发版记录可能描述青简上游；Vakyu 当前用户说明以 `README.md` 与 `docs/user/getting-started/vakyu-quickstart.md` 为准。当前未启用自动 CI；可选工作流示例与人工发版方式见 `docs/contributing.md`。
+仓库中的旧版本、路线和发版记录可能描述青简上游；Vakyu 当前用户说明以 `README.md` 与 `docs/user/getting-started/vakyu-quickstart.md` 为准。`.github/workflows/ci.yml` 已启用（main 推送与 PR 时检查 Windows 构建和测试）；其余工作流示例与人工发版方式见 `docs/contributing.md`。
 
 ## 目录地图
 
@@ -45,7 +45,7 @@ apps/macos/scripts/bundle.sh --install        # mac 壳装到 ~/Library/Input Me
 ```
 
 Windows 使用 MSVC 编译 Server、TSF 和设置程序；测试与公开构建设置 `QINGJIAN_UIACCESS=0`，避免未签名测试程序要求提权。按平台选择 package，不能在 Windows 直接构建依赖 Apple 框架的 macOS 壳。部署方式见 `apps/windows/README.md`，完整分发包见 `apps/windows/installer/README.md`。
-`docs/github-workflows/ci.yml` 提供 Windows 与共享核心检查示例；`macos-port.yml` 提供 Apple Silicon 移植检查示例。当前没有启用自动工作流。编译、单元测试或 CI 通过不代表麦克风、权限、跨应用填入已完成真机验收。
+`docs/github-workflows/ci.yml` 提供 Windows 与共享核心检查示例；`macos-port.yml` 提供 Apple Silicon 移植检查示例。其中 `ci.yml` 已复制到 `.github/workflows/` 启用，其余未启用。编译、单元测试或 CI 通过不代表麦克风、权限、跨应用填入已完成真机验收。
 
 ## 约定
 

@@ -29,6 +29,7 @@ pub fn list(dir: &Path) -> Vec<(String, PathBuf)> {
     let mut files: Vec<(String, usize, PathBuf)> = entries
         .filter_map(Result::ok)
         .map(|e| e.path())
+        .filter(|p| !is_apple_double(p))
         .filter_map(|p| {
             let extension = p.extension()?.to_str()?;
             let rank = EXTENSIONS.iter().position(|e| *e == extension)?;
@@ -42,6 +43,13 @@ pub fn list(dir: &Path) -> Vec<(String, PathBuf)> {
         .into_iter()
         .map(|(stem, _, path)| (stem, path))
         .collect()
+}
+
+/// macOS 拷贝到 FAT / 网络盘或打包时留下的 `._<名字>` 附属文件（AppleDouble）：不是词库，读它只会报「bad magic」。
+pub(crate) fn is_apple_double(path: &Path) -> bool {
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .is_some_and(|name| name.starts_with("._"))
 }
 
 /// 加载没被关掉的词库：先随包领域词库，再用户目录。坏文件只记日志、跳过：一本词库坏了不能拖垮输入法。
@@ -100,7 +108,13 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("qingjian-extra-dicts-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        for name in ["idioms.qj", "idioms.tsv", "food.tsv", "notes.txt"] {
+        for name in [
+            "idioms.qj",
+            "idioms.tsv",
+            "food.tsv",
+            "notes.txt",
+            "._food.qj",
+        ] {
             std::fs::write(dir.join(name), b"").unwrap();
         }
 

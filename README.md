@@ -14,7 +14,7 @@ Open-source Windows Chinese IME with offline speech-to-text, push-to-talk dictat
 
 [下载安装包](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases) · [详细使用教程](docs/user/getting-started/vakyu-quickstart.md) · [反馈问题](https://github.com/chenjunqi06-glitch/vakyu-voice-input/issues) · [GPL-3.0-or-later](LICENSE)
 
-> **最新版本：[0.1.5 Preview 2](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.2)** · 改善通用中文词频排序与中英混说识别，完整 Windows 安装包已同步更新。
+> **最新版本：[0.1.5 Preview 3](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.3)** · 改善语音触发、快捷键保存和后台稳定性，完整 Windows 安装包已同步更新。
 
 ## 有什么亮点
 
@@ -65,7 +65,7 @@ Open-source Windows Chinese IME with offline speech-to-text, push-to-talk dictat
 | Windows 10 22H2 / Windows 11，原生 x64 | 提供测试版安装包；尚未完成全新 Windows 环境的完整安装与卸载验收 |
 | Windows ARM / 32 位 Windows | 此安装包不支持 |
 | macOS，Apple Silicon | [移植源码](apps/macos/README.md)已在仓库中，仍需 Mac 编译与真机验收，当前没有经过验证的等效安装版 |
-| iOS | 暂无版本 |
+| iOS | 本仓库的输入法暂无 iOS 版本 |
 | Linux | 保留上游 Fcitx5 输入法代码；本项目新增语音与跟读功能未在 Linux 上验证 |
 
 普通权限的常见可编辑文本框是主要场景。密码框、系统安全界面、管理员权限程序、游戏及部分自绘控件可能不支持，不能保证所有软件都能填入。当前仅支持单个交互登录会话，不适用于多个 Windows 用户同时运行。更新输入法基础组件后，已加载旧组件的应用可能需要重开。
@@ -90,6 +90,14 @@ Open-source Windows Chinese IME with offline speech-to-text, push-to-talk dictat
 - [可选 GitHub Actions 工作流示例](docs/github-workflows/README.md)（当前未启用自动 CI）
 
 欢迎提交兼容性反馈、识别例子和改进。报错时请注明 Vakyu 版本、Windows 版本、目标软件及复现步骤。语音准确度与麦克风、环境、口音有关，不承诺零误识别。旧工程文档部分仍使用 Qingjian / Miracle 名称，Vakyu 的当前使用方式以本页和快速上手为准。
+
+## 关于 Vakyu 团队
+
+我们专注于主动交互式 AI 语言学习，希望让练习自然融入日常表达。
+
+我们的移动产品 **Vakyu AI 语音学习**已上架 Google Play，Apple App Store 版本正在审核中。本仓库维护的是开源项目 **Vakyu Voice Input**，支持平台与安装方式见上文；移动产品的上架状态不代表本仓库提供手机输入法安装包。
+
+海外官网：[vakyu.com](https://vakyu.com) · 商业合作微信：**cyx121a**
 
 ## 来源与许可
 
