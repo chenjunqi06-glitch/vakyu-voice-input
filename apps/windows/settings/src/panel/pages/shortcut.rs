@@ -1,0 +1,249 @@
+//! 「快捷键」页：语音长按、翻页键、模式键，译词 / 删候选 / 翻译选中文字的修饰键。
+//! 翻译选中文字只改修饰键，字母键固定用配置里当前的；要换字母直接改 `config.toml`。
+
+use qingjian_platform::{Modifiers, VoiceKey};
+use windows_reactor::{
+    Button, Callback, ChildrenControl, Color, ComboBox, ContentControl, Orientation, StackPanel,
+    TextBlock, TextWrapping, ToggleSwitch, View, ViewContext,
+};
+
+use crate::panel::controls::{field, index_of, page};
+use crate::panel::{Message, Settings};
+
+/// 翻页键对：界面名 + 配置写法。
+pub(crate) const PAGE_KEYS: [(&str, &str); 3] = [
+    ("方括号 [ ]", "[]"),
+    ("逗号句号 , .", ",."),
+    ("减号等号 - =", "-="),
+];
+
+/// 可当模式键的字母（与 Core `ModeKeys::CANDIDATES` 一致）。
+pub(crate) const MODE_KEYS: [&str; 3] = ["v", "u", "i"];
+
+/// 修饰键预设：界面名 + 配置写法。
+pub(crate) const MODIFIERS: [(&str, &str); 6] = [
+    ("Ctrl", "ctrl"),
+    ("Alt", "alt"),
+    ("Shift", "shift"),
+    ("Ctrl + Shift", "shift+ctrl"),
+    ("Ctrl + Alt", "ctrl+alt"),
+    ("Alt + Shift", "shift+alt"),
+];
+
+/// 语音触发键：界面名、配置值与序列化写法。
+pub(crate) const VOICE_KEYS: [(&str, VoiceKey, &str); 3] = [
+    ("左右 Alt 都可以", VoiceKey::Alt, "alt"),
+    ("仅右 Alt", VoiceKey::RightAlt, "right_alt"),
+    ("仅左 Alt", VoiceKey::LeftAlt, "left_alt"),
+];
+
+/// 保留手动配置的时长，避免设置页把它显示成另一个预设。
+pub(crate) fn voice_hold_options(current: u32) -> Vec<(String, u32)> {
+    let mut options = vec![
+        ("快速（100 毫秒）".to_owned(), 100),
+        ("标准（100 毫秒，推荐）".to_owned(), 100),
+        ("稳妥（300 毫秒）".to_owned(), 300),
+        ("减少误触（500 毫秒）".to_owned(), 500),
+    ];
+    if !options.iter().any(|(_, value)| *value == current) {
+        options.push((format!("自定义（{current} 毫秒）"), current));
+    }
+    options
+}
+
+fn mode_combo(current: char, callback: Callback<Option<usize>>) -> ComboBox {
+    let selected = MODE_KEYS
+        .iter()
+        .position(|key| key.starts_with(current))
+        .unwrap_or(0);
+    ComboBox::new()
+        .items_source(MODE_KEYS)
+        .selected_index(selected)
+        .on_selection_changed(callback)
+}
+
+/// 按解析后相等找当前项，不依赖字符串写法。
+fn modifier_combo(current: Modifiers, callback: Callback<Option<usize>>) -> ComboBox {
+    let selected = MODIFIERS
+        .iter()
+        .position(|(_, value)| value.parse::<Modifiers>().ok() == Some(current))
+        .unwrap_or(0);
+    ComboBox::new()
+        .items_source(MODIFIERS.iter().map(|(label, _)| *label))
+        .selected_index(selected)
+        .on_selection_changed(callback)
+}
+
+pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> View {
+    let s = &settings.config.shortcut;
+    let hold_ms = s.voice_hold_ms();
+    let hold_options = voice_hold_options(hold_ms);
+    let rows = [
+        field(
+            "按住说话",
+            "按住语音键时显示语音条并录音。未开启跟读练习时，松开后自动填入开始录音的输入框，不会自动发送。语音在本机识别。",
+            ToggleSwitch::new()
+                .is_on(s.voice_input)
+                .on_toggled(context.callback(Message::VoiceInput)),
+        ),
+        field(
+            "启用跟读练习 / Reading practice",
+            "默认关闭，可随时开关。按下方学习方向录原话，松键后显示译句并示范，随后自动录音跟读。完整读完才填入原话，不会自动发送；Esc 取消。翻译使用「云服务」中的服务，只发送本次文字，语音在本机识别。中英文练习各自从新手开始积累进度。",
+            ToggleSwitch::new()
+                .is_on(s.voice_english_practice)
+                .on_toggled(context.callback(Message::VoiceEnglishPractice)),
+        ),
+        field(
+            "学习英语 / Learn English",
+            "开启：说中文 → 跟读英文 → 填入原中文。关闭：说英文 → 跟读中文（附拼音、英文词义）→ 填入原英文。Off: speak English, practise Chinese, then insert your original English. 方向保存后立即生效；切换时会取消尚未完成的一轮。",
+            ToggleSwitch::new()
+                .is_on(s.voice_practice_learn_english)
+                .on_toggled(context.callback(Message::VoicePracticeLearnEnglish)),
+        ),
+        field(
+            "跟读快捷键",
+            "开启跟读练习时，按住此键按所选方向录原话，松开后进入跟读。支持右 Ctrl + 右 Alt（两键同时按住，顺序不限）、Ctrl+Alt+E 等组合键、F 功能键或单独左右 Alt。录入后全部松开再保存。单键会占用原功能，不允许单独字母、数字或空格。保存检查系统注册占用；不能完整区分左右修饰键或检测软件内部快捷键。",
+            practice_shortcut_control(settings, context),
+        ),
+        field(
+            "跟读示范朗读",
+            "默认开启。按学习方向在本机慢速读一遍英文或中文，示范结束后自动开启麦克风跟读；关闭后直接开始跟读。需本机安装对应语言的朗读声音。",
+            ToggleSwitch::new()
+                .is_on(s.voice_practice_demo)
+                .on_toggled(context.callback(Message::VoicePracticeDemo)),
+        ),
+        field(
+            "语音触发键",
+            "未开启跟读时的普通语音按键。后台运行时可在普通软件输入框中使用，无需重开软件；开启跟读后使用上方跟读快捷键。",
+            ComboBox::new()
+                .items_source(VOICE_KEYS.iter().map(|(label, _, _)| *label))
+                .selected_index(
+                    VOICE_KEYS
+                        .iter()
+                        .position(|(_, key, _)| *key == s.voice_key),
+                )
+                .is_enabled(s.voice_input)
+                .on_selection_changed(context.callback(Message::VoiceKey)),
+        ),
+        field(
+            "启动灵敏度",
+            "按键保持多久才开始录音。时间越短启动越快，越长越不易误触；更改后下次录音生效。",
+            ComboBox::new()
+                .items_source(hold_options.iter().map(|(label, _)| label.as_str()))
+                .selected_index(hold_options.iter().position(|(_, value)| *value == hold_ms))
+                .is_enabled(s.voice_input)
+                .on_selection_changed(context.callback(Message::VoiceHold)),
+        ),
+        field(
+            "翻页键",
+            "选「, .」或「- =」时组句中敲对应符号是翻页，不再是上屏加标点。",
+            ComboBox::new()
+                .items_source(PAGE_KEYS.iter().map(|(label, _)| *label))
+                .selected_index(index_of(&PAGE_KEYS, &settings.config.general.page_keys))
+                .on_selection_changed(context.callback(Message::PageKeys)),
+        ),
+        field(
+            "表达式模式键",
+            "",
+            mode_combo(s.mode.expression, context.callback(Message::ModeExpression)),
+        ),
+        field(
+            "问字模式键",
+            "这两个字母开头进模式：v1+2 出 3，usangemu 问「三个木」（需要云服务）。两个键不能相同。",
+            mode_combo(s.mode.question, context.callback(Message::ModeQuestion)),
+        ),
+        field(
+            "没在输入拼音时敲 ? 也进入问字",
+            "开着时 ? 先进问字（中英文模式都行），后面跟字母才是问题，跟其他键时还原成问号；关着问号就是问号。",
+            ToggleSwitch::new()
+                .is_on(s.mode.question_mark)
+                .on_toggled(context.callback(Message::QuestionMark)),
+        ),
+        field(
+            "译词上屏（第一个）",
+            "按住修饰键再按候选序号，上屏候选右侧的译词而不是中文。",
+            modifier_combo(s.translation, context.callback(Message::Translation)),
+        ),
+        field(
+            "译词上屏（第二个）",
+            "候选有两个译词时，这组键上屏后一个。两组不能相同。Ctrl + Shift 是 Windows 切换输入法的热键，同时装着别的输入法时别选它。",
+            modifier_combo(
+                s.translation_second,
+                context.callback(Message::TranslationSecond),
+            ),
+        ),
+        field(
+            "删除候选",
+            "按住修饰键再按候选序号：自己造的词、云端选过的词整删；词库里的词清掉学习记录，回到原排序。",
+            modifier_combo(
+                s.delete_candidate,
+                context.callback(Message::DeleteCandidate),
+            ),
+        ),
+        field(
+            "翻译选中文字",
+            "选中一段文字后按这组键 + 当前字母（缺省 Ctrl+Alt+T），把它译成学习语言，回车 / 空格替换、Esc 保留原文。需要云服务。这里只改修饰键，字母固定用当前的。",
+            modifier_combo(
+                s.translate_selection.modifiers,
+                context.callback(Message::TranslateSelection),
+            ),
+        ),
+    ];
+    page("快捷键", StackPanel::new().spacing(16.0).children(rows))
+}
+
+fn practice_shortcut_control(settings: &Settings, context: &mut ViewContext<Settings>) -> View {
+    let editor = &settings.hotkey;
+    let status: View = TextBlock::new()
+        .text(if editor.message.is_empty() {
+            format!(
+                "当前：{}",
+                settings.config.shortcut.voice_practice_shortcut.label()
+            )
+        } else {
+            editor.message.clone()
+        })
+        .text_wrapping(TextWrapping::Wrap)
+        .foreground(if editor.failed {
+            Color::rgb(255, 174, 185)
+        } else {
+            crate::panel::theme::TEXT
+        })
+        .into();
+    StackPanel::new().spacing(8.0).children([
+        TextBlock::new()
+            .text(format!(
+                "当前：{}",
+                settings.config.shortcut.voice_practice_shortcut.label()
+            ))
+            .into(),
+        StackPanel::new()
+            .orientation(Orientation::Horizontal)
+            .spacing(8.0)
+            .children([
+                Button::new()
+                    .is_enabled(!editor.recording && !editor.saving)
+                    .on_click(context.message(Message::PracticeShortcutRecord))
+                    .content(if editor.recording {
+                        "等待按键…"
+                    } else if editor.candidate.is_some() {
+                        "重新录入快捷键"
+                    } else {
+                        "按下新的快捷键"
+                    }),
+                Button::new()
+                    .is_enabled(editor.candidate.is_some() && !editor.recording && !editor.saving)
+                    .on_click(context.message(Message::PracticeShortcutSave))
+                    .content("保存"),
+                Button::new()
+                    .is_enabled(!editor.saving)
+                    .on_click(context.message(Message::PracticeShortcutReset))
+                    .content("恢复默认"),
+                Button::new()
+                    .is_enabled(editor.recording)
+                    .on_click(context.message(Message::PracticeShortcutCancel))
+                    .content("取消录入"),
+            ]),
+        status,
+    ])
+}

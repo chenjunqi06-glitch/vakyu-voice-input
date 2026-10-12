@@ -1,0 +1,23 @@
+[package]
+name = "vakyu-voice-service"
+version = "0.1.3-dev"
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+qingjian-core.workspace = true
+qingjian-learning.workspace = true
+qingjian-platform.workspace = true
+qingjian-predict.workspace = true
+qingjian-practice.workspace = true
+qingjian-translate.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml_edit.workspace = true
+clap.workspace = true
+tracing.workspace = true
+dotenvy.workspace = true
+

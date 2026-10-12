@@ -1,0 +1,86 @@
+#!/bin/sh
+# 安装器以 root 运行；最终目录登记/回读必须属于当前桌面用户，失败恢复旧包。
+set -eu
+APP="/Library/Input Methods/Vakyu.app"
+BACKUP="/Library/Input Methods/.vakyu-pkg-backup"
+user="$(stat -f%Su /dev/console 2>/dev/null || true)"
+saved_user="$(cat "$BACKUP/console-user")"
+uid="$(id -u "$saved_user")"
+user_home="$(cat "$BACKUP/user-home")"
+AGENT="$user_home/Library/LaunchAgents/app.vakyu.voice.plist"
+old="$(cat "$BACKUP/original-path")"
+case "$old" in /Library/Input\ Methods/Vakyu.app|/Library/Input\ Methods/Qingjian.app) ;;
+    *) echo "Vakyu：备份路径无效，请保留 $BACKUP" >&2; exit 1 ;;
+esac
+as_user() { launchctl asuser "$uid" sudo -H -u "$saved_user" "$@"; }
+rollback() {
+    status=$?
+    trap - EXIT HUP INT TERM
+    set +e
+    echo "Vakyu：安装未通过核验，正在恢复原安装。" >&2
+    launchctl bootout "gui/$uid/app.vakyu.voice" >/dev/null 2>&1
+    pkill -x VakyuVoice 2>/dev/null
+    pkill -x qingjian-macos 2>/dev/null
+    if [ -f "$BACKUP/voice-agent.plist" ]; then
+        cp -p "$BACKUP/voice-agent.plist" "$AGENT"
+    elif [ -f "$AGENT" ] && [ "$(/usr/libexec/PlistBuddy -c 'Print :Label' "$AGENT" 2>/dev/null)" = app.vakyu.voice ]; then
+        rm -f "$AGENT"
+    fi
+    # 先保留本次核验器，旧版本可能还没有它。
+    cp "$APP/Contents/Resources/verify_input_source" "$BACKUP/verify_input_source"
+    if [ ! -d "$BACKUP/previous" ]; then
+        previous="$(cat "$BACKUP/source-before" 2>/dev/null)"
+        if [ -n "$previous" ] && as_user "$APP/Contents/MacOS/qingjian-macos" --finish-register "$previous"; then
+            as_user /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -u "$APP" || true
+        else
+            echo "Vakyu：原输入源未恢复，保留应用和诊断目录，避免删除仍被选中的输入法：$BACKUP" >&2
+            exit "$status"
+        fi
+    fi
+    rm -rf "$APP"
+    restored=0
+    if [ -d "$BACKUP/previous" ]; then
+        # 旧名称尚未删除时先清理它，避免 mv 将原包嵌套进旧目录。
+        if [ "$old" != "$APP" ]; then rm -rf "$old"; fi
+        if mv "$BACKUP/previous" "$old" && /usr/bin/codesign --verify --deep --strict "$old"; then
+            if as_user "$old/Contents/MacOS/qingjian-macos" --register && \
+                as_user "$BACKUP/verify_input_source" "$old" && as_user /usr/bin/open -g "$old"; then
+                echo "Vakyu：原安装和输入源登记已恢复。" >&2
+                restored=1
+            else
+                echo "Vakyu：原包已恢复，输入源登记仍需检查；保留 $BACKUP" >&2
+            fi
+            if [ -f "$BACKUP/voice-agent.plist" ]; then
+                as_user launchctl bootstrap "gui/$uid" "$AGENT" || \
+                    { restored=0; echo "Vakyu：原语音自动启动仍需检查。" >&2; }
+            fi
+        else
+            echo "Vakyu：恢复原安装失败，请保留备份 $BACKUP" >&2
+        fi
+    else
+        restored=1
+    fi
+    if [ "$restored" = 1 ]; then rm -rf "$BACKUP"; fi
+    exit "$status"
+}
+trap rollback EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+[ "$user" = "$saved_user" ] || { echo "Vakyu：桌面用户已改变，无法完成本次输入源核验。" >&2; exit 1; }
+as_user "$APP/Contents/Resources/verify_input_source" --current-source > "$BACKUP/source-before"
+launchctl bootout "gui/$uid/app.vakyu.voice" >/dev/null 2>&1 || true
+pkill -x VakyuVoice 2>/dev/null || true
+pkill -x qingjian-macos 2>/dev/null || true
+# 最终登记前清掉已备份的旧名称包，避免两个 bundle 交替覆盖输入源元数据。
+if [ "$old" != "$APP" ] && [ -d "$old" ]; then rm -rf "$old"; fi
+as_user /bin/sh "$APP/Contents/Resources/register_input_source.sh" "$APP"
+as_user /usr/bin/open -g "$APP"
+if [ -f "$APP/Contents/Resources/install_voice_agent.sh" ]; then
+    as_user /bin/sh "$APP/Contents/Resources/install_voice_agent.sh" "$APP"
+fi
+as_user "$APP/Contents/Resources/verify_input_source" "$APP"
+trap - EXIT HUP INT TERM
+rm -rf "$BACKUP"
+echo "Vakyu：最终安装路径、输入源启用及可选状态均已通过独立进程核验。"
+exit 0

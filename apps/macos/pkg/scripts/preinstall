@@ -1,0 +1,57 @@
+#!/bin/sh
+# 升级前保留可恢复的原包，并拒绝形成系统级/用户级同身份双重安装。
+set -eu
+user="$(stat -f%Su /dev/console 2>/dev/null || true)"
+if [ -z "$user" ] || [ "$user" = root ] || [ "$user" = loginwindow ]; then
+    echo "Vakyu：请登录 macOS 桌面后重新运行安装器，以完成输入源登记核验。" >&2
+    exit 1
+fi
+user_home="$(dscl . -read "/Users/$user" NFSHomeDirectory | sed 's/^NFSHomeDirectory: //')"
+for name in Vakyu Qingjian; do
+    candidate="$user_home/Library/Input Methods/$name.app"
+    if [ -d "$candidate" ] && [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$candidate/Contents/Info.plist" 2>/dev/null)" = app.qingjian.inputmethod ]; then
+        echo "Vakyu：已有用户级安装 $candidate；请先卸载该副本，再安装系统版。" >&2
+        exit 1
+    fi
+done
+APP="/Library/Input Methods/Vakyu.app"
+LEGACY="/Library/Input Methods/Qingjian.app"
+BACKUP="/Library/Input Methods/.vakyu-pkg-backup"
+[ ! -e "$BACKUP" ] && [ ! -L "$BACKUP" ] || {
+    echo "Vakyu：存在前次安装的恢复备份，请先恢复该次安装：$BACKUP" >&2; exit 1;
+}
+old="$APP"
+if [ -d "$LEGACY" ] && [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$LEGACY/Contents/Info.plist" 2>/dev/null)" = app.qingjian.inputmethod ]; then
+    [ ! -e "$APP" ] || { echo "Vakyu：系统目录已有两份输入法，请先处理重复安装。" >&2; exit 1; }
+    old="$LEGACY"
+fi
+mkdir -p /Library/Input\ Methods
+# 允许登录用户执行回滚核验器；目录只允许 root 列举/写入。
+mkdir -m 711 "$BACKUP"
+cleanup_preinstall() {
+    status=$?
+    trap - EXIT HUP INT TERM
+    # 此阶段没有修改/停止原安装；只删除本次尚未完成的备份。
+    if [ "$status" != 0 ]; then rm -rf "$BACKUP"; fi
+    exit "$status"
+}
+trap cleanup_preinstall EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+printf '%s\n' "$old" > "$BACKUP/original-path"
+printf '%s\n' "$user" > "$BACKUP/console-user"
+printf '%s\n' "$user_home" > "$BACKUP/user-home"
+if [ -f "$user_home/Library/LaunchAgents/app.vakyu.voice.plist" ]; then
+    cp -p "$user_home/Library/LaunchAgents/app.vakyu.voice.plist" "$BACKUP/voice-agent.plist"
+fi
+if [ -e "$old" ]; then
+    [ ! -L "$old" ] && [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$old/Contents/Info.plist")" = app.qingjian.inputmethod ] || {
+        rm -rf "$BACKUP"; echo "Vakyu：安装位置不是预期的应用包。" >&2; exit 1;
+    }
+    /usr/bin/codesign --verify --deep --strict "$old"
+    /usr/bin/ditto --noextattr --norsrc --noacl "$old" "$BACKUP/previous"
+    /usr/bin/codesign --verify --deep --strict "$BACKUP/previous"
+fi
+# 载荷写入失败时旧进程仍可继续使用；停止与旧名称清理由 postinstall 完成。
+exit 0

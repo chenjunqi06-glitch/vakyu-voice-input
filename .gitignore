@@ -1,0 +1,17 @@
+/target
+**/*.rs.bk
+.DS_Store
+*.app
+.env
+/logs
+/data
+.playwright-mcp/
+
+# 本机凭据与发布产物
+.env.*
+*.p12
+*.pfx
+*.pem
+*.key
+*.pkg
+*.dmg

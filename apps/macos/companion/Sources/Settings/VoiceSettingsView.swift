@@ -1,0 +1,147 @@
+// 语音与双向学习的用户设置；翻译密钥沿用主输入法设置，不复制保存。
+import SwiftUI
+import AVFoundation
+
+struct VoiceSettingsView: View {
+    let coordinator: VoiceCoordinator
+
+    @ObservedObject var model: VoiceModel
+
+    @AppStorage("voice.englishIdentifier") private var englishVoice = ""
+
+    @AppStorage("voice.chineseIdentifier") private var chineseVoice = ""
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                header
+                if !model.permissionsReady { PermissionSetupView(coordinator: coordinator, model: model) }
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 14) {
+                        Toggle("启用全局语音输入", isOn: toggle("voice_input", \.enabled))
+                        Toggle("无法读取输入框时直接粘贴", isOn: toggle("voice_paste_fallback", \.pasteFallback))
+                        Text("只在原应用和原窗口未改变时粘贴一次；无法核对的结果会明确提示，并保留复制文字入口。不会自动发送。")
+                            .font(.caption).foregroundStyle(.white.opacity(0.65))
+                        Toggle("启用口语跟读快捷键", isOn: toggle("voice_english_practice", \.practice))
+                        Toggle("学习英语", isOn: toggle("voice_practice_learn_english", \.learnEnglish))
+                        Text(model.configuration.learnEnglish
+                             ? "说中文 → 跟读英文 → 填入原中文"
+                             : "说英文 → 跟读中文（含拼音）→ 填入原英文")
+                            .font(.caption).foregroundStyle(.white.opacity(0.72))
+                        Toggle("跟读前播放整句示范", isOn: toggle("voice_practice_demo", \.demo))
+                        Text("普通语音始终直接填入，不经过跟读。口语跟读使用另一个快捷键，关闭后该快捷键不触发录音。两种方式都不自动发送；Esc 可取消。只有口语跟读为每次原话请求一次翻译。")
+                            .font(.caption).foregroundStyle(.white.opacity(0.65))
+                    }.padding(8)
+                } label: { Label("语音与学习方向", systemImage: "mic.fill") }
+                shortcutSection
+                if model.permissionsReady { PermissionSetupView(coordinator: coordinator, model: model) }
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 12) {
+                        voicePicker("英语示范音色", selection: $englishVoice, language: "en")
+                        voicePicker("中文示范音色", selection: $chineseVoice, language: "zh")
+                        Text("使用 macOS 本机声音，不耗 API token，也不需要独立显卡。更多声音可在系统设置的“朗读内容”中下载。")
+                            .font(.caption).foregroundStyle(.white.opacity(0.65))
+                    }.padding(8)
+                } label: { Label("示范朗读", systemImage: "speaker.wave.2.fill") }
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 10) {
+                        threshold("普通词最低相似度", key: "voice_practice_similarity", value: model.configuration.similarity)
+                        threshold("人名与专名最低相似度", key: "voice_practice_name_similarity", value: model.configuration.nameSimilarity)
+                        Text("数值越低越宽容。新手阶段使用该阈值，随本机练习经验逐步提高要求。遇到识别偏差可用“我读对了”或“跳过此词”，不会卡死。")
+                            .font(.caption).foregroundStyle(.white.opacity(0.65))
+                    }.padding(8)
+                } label: { Label("发音容错", systemImage: "person.wave.2.fill") }
+                HStack {
+                    Button("输入法详细设置") { coordinator.openInputSettings() }
+                    Spacer()
+                    Button("重新启动语音服务") { coordinator.restart() }
+                        .disabled(model.visible)
+                }
+                if !model.settingMessage.isEmpty {
+                    Text(model.settingMessage).font(.caption).foregroundStyle(.white.opacity(0.8))
+                }
+                Text("Vakyu · 本机语音与离线词典 · Apple Silicon")
+                    .font(.caption2).foregroundStyle(.white.opacity(0.45))
+            }
+            .padding(.horizontal, 30).padding(.top, 44).padding(.bottom, 28)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .foregroundStyle(.white)
+        .background(Brand.gradient)
+        .tint(Color(red: 0.78, green: 0.63, blue: 1))
+        .onAppear { coordinator.refreshPermissions() }
+    }
+
+    private var header: some View {
+        HStack(spacing: 18) {
+            if let image = Brand.image("vakyu-logo.png") {
+                Image(nsImage: image).resizable().scaledToFit().frame(width: 140, height: 72)
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("语音设置").font(.system(size: 26, weight: .bold))
+                Label(model.availabilityMessage,
+                      systemImage: model.inputReady ? "checkmark.circle.fill" : "exclamationmark.circle")
+                    .font(.caption).foregroundStyle(.white.opacity(0.7))
+            }
+            Spacer()
+        }
+    }
+
+    private var shortcutSection: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text("普通语音输入")
+                    Spacer()
+                    Text(model.dictationShortcutLabel).fontWeight(.semibold)
+                }
+                Text("按住普通语音键说话，松开即填入原话，不进入跟读。")
+                    .font(.caption).foregroundStyle(.white.opacity(0.7))
+                Divider().overlay(.white.opacity(0.15))
+                HStack {
+                    Text("口语跟读")
+                    Text(model.shortcutRecording ? "请按下新的快捷键…" : model.shortcutLabel)
+                        .font(.system(size: 15, weight: .semibold))
+                    Spacer()
+                    Button("修改跟读键") { coordinator.recordShortcut() }.disabled(model.visible || model.shortcutRecording)
+                    Button("恢复默认") { coordinator.saveShortcut(.defaultValue) }.disabled(model.visible)
+                }
+                Text("跟读默认右 Control＋右 Option。可改为右 Command＋右 Option、F8、Control＋Option＋E 等；不能与普通语音键相同，也不允许单独字母。两种入口切换前请完全松开上一组按键。")
+                    .font(.caption).foregroundStyle(.white.opacity(0.7))
+                if !model.shortcutMessage.isEmpty { Text(model.shortcutMessage).font(.caption) }
+                Text("保存会检测系统注册的组合键占用。纯修饰键、硬件功能键以及只在某个应用内部生效的快捷键无法完整检测。")
+                    .font(.caption).foregroundStyle(.white.opacity(0.6))
+                HStack {
+                    Text("按住启动延迟")
+                    Spacer()
+                    Picker("按住启动延迟", selection: Binding(
+                        get: { model.configuration.holdMilliseconds },
+                        set: { coordinator.set("voice_hold_ms", value: $0) })) {
+                            Text("100 毫秒").tag(100)
+                            Text("200 毫秒").tag(200)
+                            Text("300 毫秒").tag(300)
+                    }.labelsHidden().frame(width: 150)
+                }.font(.caption)
+            }.padding(8)
+        } label: { Label("全局快捷键", systemImage: "keyboard") }
+    }
+
+    private func toggle(_ key: String, _ path: KeyPath<VoiceConfiguration, Bool>) -> Binding<Bool> {
+        Binding(get: { model.configuration[keyPath: path] }, set: { coordinator.set(key, value: $0) })
+    }
+
+    private func voicePicker(_ label: String, selection: Binding<String>, language: String) -> some View {
+        Picker(label, selection: selection) {
+            Text("系统默认").tag("")
+            ForEach(SpeechPlayer.voices(language: language), id: \.identifier) { voice in
+                Text("\(voice.name) · \(voice.language)").tag(voice.identifier)
+            }
+        }
+    }
+
+    private func threshold(_ label: String, key: String, value: Int) -> some View {
+        Stepper(value: Binding(get: { value }, set: { coordinator.set(key, value: $0) }), in: 30...95, step: 1) {
+            Text("\(label)：\(value)%").font(.system(size: 13))
+        }
+    }
+}
