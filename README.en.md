@@ -12,6 +12,12 @@ Vakyu combines push-to-talk speech-to-text with language practice based on what 
 
 > **Latest preview: [0.1.5 Preview 3](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.3)** · Improved voice triggers, shortcut saving, and background stability, with an updated full Windows installer.
 
+## Video demo
+
+[![Watch the Vakyu voice input and reading practice demo](assets/screenshots/demo-cover.jpg)](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/download/v0.1.5-preview.3/vakyu-voice-input-demo.mp4)
+
+[Watch or download the full demo](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/download/v0.1.5-preview.3/vakyu-voice-input-demo.mp4) · Chinese narration · 3:02 · MP4, about 78 MB. Click the cover to open the video; your browser may download it instead.
+
 ## What makes it useful
 
 - Hold **Left Alt** to dictate Chinese into an editable text field. Release to insert the result. It never presses Send.
