@@ -25,10 +25,14 @@ final class StatusItemController: NSObject {
                                action: nil, keyEquivalent: "")
         title.isEnabled = false; menu.addItem(title); menu.addItem(.separator())
         add(menu, "启用语音输入", #selector(toggleVoice), checked: config.enabled)
-        add(menu, "启用口语跟读快捷键", #selector(togglePractice), checked: config.practice)
+        add(menu, "跟读（读完填入原话）", #selector(toggleShadowing),
+            checked: config.enabled && config.practice && !config.sendTranslation)
+        add(menu, config.learnEnglish ? "说中发英（读完填入英文）" : "说英发中（读完填入中文）",
+            #selector(toggleSendTranslation), checked: config.enabled && config.practice && config.sendTranslation)
         add(menu, "学习英语（关闭后学习中文）", #selector(toggleDirection), checked: config.learnEnglish)
         add(menu, "播放整句示范", #selector(toggleDemo), checked: config.demo)
         menu.addItem(.separator())
+        add(menu, "显示快捷浮窗", #selector(toggleQuickBar), checked: coordinator.quickBar.isShown)
         add(menu, "语音设置…", #selector(openSettings))
         add(menu, "输入法详细设置…", #selector(openInputSettings))
         menu.addItem(.separator())
@@ -50,9 +54,14 @@ final class StatusItemController: NSObject {
         coordinator.set("voice_input", value: !coordinator.model.configuration.enabled)
     }
 
-    @objc private func togglePractice() {
+    @objc private func toggleShadowing() { coordinator?.togglePracticeOutput(sendTranslation: false) }
+
+    @objc private func toggleSendTranslation() { coordinator?.togglePracticeOutput(sendTranslation: true) }
+
+    @objc private func toggleQuickBar() {
         guard let coordinator else { return }
-        coordinator.set("voice_english_practice", value: !coordinator.model.configuration.practice)
+        coordinator.quickBar.setShown(!coordinator.quickBar.isShown)
+        refresh()
     }
 
     @objc private func toggleDirection() {
