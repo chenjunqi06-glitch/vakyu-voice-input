@@ -15,7 +15,8 @@
 - `speech_finished`：`id:u64,ok:bool`，TTS 实际结束后确认；即使失败也应回报。
 - `action`：`action:"retry"|"skip"|"accept"|"lookup"|"close_card"|"speak_word"`，lookup 另带 `index:usize`（显示 words 的索引）。
 - `commit_result`：`id:u64,ok:bool,message?:string`。只填入原目标，**不发送**；宿主检查目标身份、可编辑、非密码、安全输入。成功才确认；相同 id 必须幂等。同一轮提交失败或确认超时，显式 action retry 始终复用相同 id、原话，不自动重发；普通口述也支持该重试。失败保留窗口，已成功填入的 id 返回成功即可，不能再插一次。
-- `set`：`key:string,value:JSON scalar`。只支持 shortcut 节白名单：voice_input、voice_english_practice、voice_practice_learn_english、voice_practice_demo、voice_practice_shortcut、voice_hold_ms、voice_practice_similarity、voice_practice_name_similarity。快捷键必须宿主注册成功才保存；冲突不发送 set。
+- `set`：`key:string,value:JSON scalar`。只支持 shortcut 节白名单：voice_input、voice_english_practice、voice_practice_learn_english、voice_practice_send_translation、voice_practice_demo、voice_practice_shortcut、voice_hold_ms、voice_practice_similarity、voice_practice_name_similarity。快捷键必须宿主注册成功才保存；冲突不发送 set。
+- `translate`：`id:u64,text:string`。划词翻译（系统「服务」菜单交来的选中文字），自动定方向：汉字多译成英文，否则译成中文；结果以 `translation` 事件返回，不影响当前语音轮次，不填入输入框。
 - `reload`：立即重读配置；服务另外每秒检测 mtime。
 - `shutdown`：释放 ASR 子进程并退出。
 
@@ -26,21 +27,22 @@
 顶层 `event`，snake_case：
 
 - `ready`：ASR 模型已就绪。
-- `config`：`voice_input,practice,learn_english,demo` bool；`shortcut,dictation_key` string；`hold_ms,similarity,name_similarity` integer。dictation_key 来自 shortcut.voice_key（alt/left_alt/right_alt）；shortcut 来自 voice_practice_shortcut。仅白名单，不含 API 凭据。
+- `config`：`voice_input,practice,learn_english,send_translation,demo` bool；`shortcut,dictation_key` string；`hold_ms,similarity,name_similarity` integer。dictation_key 来自 shortcut.voice_key（alt/left_alt/right_alt）；shortcut 来自 voice_practice_shortcut。仅白名单，不含 API 凭据。
 - `capture`：`active:bool,generation:u64,language:"en"|"zh",practice_text?:string`。active=true 开麦，false 立即关麦；宿主仅向相同 generation 发送音频。
 - `dictation`：`text:string,recording:bool,level:float`（0–1）。预览原话并更新真实音量动画。
 - `practice`：`view:PracticeView`，完整快照见下。
 - `speak`：`id:u64,text:string,language:"en"|"zh",rate:i32`。rate 为慢速级别 -2/-1/0，原生可映射 AVSpeechUtterance 速度；按语言选系统声音。播放期间服务关闭 capture，回报 speech_finished 后约 400 ms 重开，避免把示范当作用户。
 - `cancel_speech`：立刻停止 TTS，随后返回的旧 speech_finished 无效。
-- `commit`：`id:u64,text:string`。仅原话，跟读完成才产生；收到成功确认后才累积 XP 和 hide。等待结果时暂不受理 retry，避免同时插入；失败回执或 15 秒确认超时后允许显式重试。
+- `commit`：`id:u64,text:string`。跟读完成才产生；内容默认是原话，`send_translation` 开启时是刚读完的译文；收到成功确认后才累积 XP 和 hide。等待结果时暂不受理 retry，避免同时插入；失败回执或 15 秒确认超时后允许显式重试。
 - `hide`：清除本轮浮窗。
 - `error`：`message:string`，可读提示，不能关闭未完成的跟读。
+- `translation`：`id:u64,ok:bool,text:string,target:"en"|"zh"`。ok 时 text 是译文（保留换行），否则是可读的失败提示。
 - `setting_result`：`key:string,ok:bool,message:string`；失败保留原配置，用 key 关联原生设置回执。
 
 PracticeView 字段：`learn_english:bool, pronunciations:[string], original:string, words:[string], matched_words:usize, level_label:string, level_progress:string, recognized:string, feedback:string, actions_enabled:bool, recording:bool, word_card:WordCard|null, status:string`。
 WordCard：`word:string,meaning:string|null,pronunciation:string|null,hint:string|null`。中文 pronunciation 为带调拼音，英文为 IPA。pronunciations 与中文 words 一一对应，英文时为空。
 
-只允许 Esc 或成功填入后关闭练习窗。点击词卡不改变计时/进度，播放发音暂停收音但保留已读前缀。学习英语开：说中文、读英文、填中文；关：说英文、读中文、填英文。
+只允许 Esc 或成功填入后关闭练习窗。点击词卡不改变计时/进度，播放发音暂停收音但保留已读前缀。学习英语开：说中文、读英文、填中文；关：说英文、读中文、填英文。send_translation 开启时改为填入译文：说中文、读英文、填英文（学中文方向：说英文、读中文、填中文）。
 
 ## 服务 ↔ external_main.py
 

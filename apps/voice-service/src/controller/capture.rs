@@ -200,9 +200,9 @@ impl Controller {
                 self.capture_started_at = None;
                 if let Some(session) = &mut self.practice {
                     if session.final_result(&text) {
-                        let original = session.completed_original().unwrap_or_default().to_owned();
+                        let output = session.completed_output().unwrap_or_default().to_owned();
                         self.show_practice();
-                        self.commit(original);
+                        self.commit(output);
                     } else if session.phase == Phase::Preparing {
                         self.start_practice_capture();
                     } else {

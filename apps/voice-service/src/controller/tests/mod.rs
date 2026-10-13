@@ -3,6 +3,7 @@
 mod continuation;
 mod lifecycle;
 mod modes;
+mod output;
 
 use super::{Controller, settings::validated_value};
 use crate::protocol::{AsrEvent, Command, Effect, Event};

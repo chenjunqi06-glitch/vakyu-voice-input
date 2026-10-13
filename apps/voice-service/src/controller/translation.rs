@@ -10,16 +10,19 @@ impl Controller {
     pub(super) fn begin_practice(&mut self, text: String) {
         let (level, progress) = self.game.begin();
         let shortcut = &self.config.shortcut;
-        self.practice = Some(PracticeSession::new_for_language(
-            text.clone(),
-            level,
-            progress,
-            PracticeMatchConfig {
-                word_similarity: shortcut.voice_practice_similarity,
-                name_similarity: shortcut.voice_practice_name_similarity,
-            },
-            self.learn_english(),
-        ));
+        self.practice = Some(
+            PracticeSession::new_for_language(
+                text.clone(),
+                level,
+                progress,
+                PracticeMatchConfig {
+                    word_similarity: shortcut.voice_practice_similarity,
+                    name_similarity: shortcut.voice_practice_name_similarity,
+                },
+                self.learn_english(),
+            )
+            .with_send_translation(shortcut.voice_practice_send_translation),
+        );
         self.show_practice();
         if self.translator.is_none() {
             match VoicePracticeTranslator::new(&self.config.predict) {

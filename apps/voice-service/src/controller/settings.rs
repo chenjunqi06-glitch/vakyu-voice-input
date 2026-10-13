@@ -10,6 +10,7 @@ pub fn validated_value(key: &str, value: &Value) -> Result<toml_edit::Value, &'s
         "voice_input"
         | "voice_english_practice"
         | "voice_practice_learn_english"
+        | "voice_practice_send_translation"
         | "voice_practice_demo" => value
             .as_bool()
             .map(Into::into)
@@ -40,6 +41,7 @@ impl Controller {
             voice_input: s.voice_input,
             practice: s.voice_english_practice,
             learn_english: s.voice_practice_learn_english,
+            send_translation: s.voice_practice_send_translation,
             demo: s.voice_practice_demo,
             shortcut: s.voice_practice_shortcut.key_string(),
             dictation_key: match s.voice_key {
@@ -99,6 +101,7 @@ impl Controller {
                 translator.cancel();
             }
             self.translator = None;
+            self.drop_reader();
         }
         self.config = config;
         if direction_changed {
