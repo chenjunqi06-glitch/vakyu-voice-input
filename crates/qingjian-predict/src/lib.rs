@@ -21,4 +21,6 @@ pub use config::PredictConfig;
 pub use connection::{ConnectionReport, ConnectionTest};
 pub use error::PredictError;
 pub use gloss::CloudGlossFiller;
-pub use voice_practice::{VoicePracticeError, VoicePracticeTranslation, VoicePracticeTranslator};
+pub use voice_practice::{
+    VoicePracticeError, VoicePracticeTranslation, VoicePracticeTranslator, reading_target,
+};

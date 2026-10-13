@@ -76,6 +76,7 @@ extension VoiceCoordinator {
             delivery.reset(); model.clearRound(); overlay.hideRound()
         case "error": showError(object["message"] as? String ?? "语音服务暂时不可用。")
         case "setting_result": settingResult(object)
+        case "translation": translationResult(object)
         default: break
         }
     }

@@ -37,6 +37,11 @@ pub enum Command {
         key: String,
         value: serde_json::Value,
     },
+    /// 划词翻译：宿主从系统「服务」菜单拿到的选中文字；与跟读互不影响。
+    Translate {
+        id: u64,
+        text: String,
+    },
     Reload,
     Shutdown,
 }

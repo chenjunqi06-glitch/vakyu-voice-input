@@ -11,6 +11,12 @@ pub enum TrayAction {
 
     TogglePracticeDemo,
 
+    /// 「跟读」：开启读完填入原话的跟读；已在这种模式时关闭跟读。
+    ToggleShadowing,
+
+    /// 「发英」：开启读完填入译文的跟读；已在这种模式时关闭跟读。
+    ToggleSendTranslation,
+
     ToggleCloud,
 
     ToggleStatusBar,

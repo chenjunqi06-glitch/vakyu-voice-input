@@ -223,6 +223,7 @@ impl Router {
             self.config.voice_hold_ms,
             self.config.voice_english_practice,
             self.config.voice_practice_learn_english,
+            self.config.voice_practice_send_translation,
             self.config.voice_practice_demo,
             self.config.voice_practice_similarity,
             self.config.voice_practice_name_similarity,
@@ -233,6 +234,7 @@ impl Router {
             config.shortcut.voice_hold_ms(),
             config.shortcut.voice_english_practice,
             config.shortcut.voice_practice_learn_english,
+            config.shortcut.voice_practice_send_translation,
             config.shortcut.voice_practice_demo,
             config.shortcut.voice_practice_similarity.min(100),
             config.shortcut.voice_practice_name_similarity.min(100),
@@ -254,6 +256,8 @@ impl Router {
             self.candidates.configure(settings);
         }
         self.reconcile_status();
+        #[cfg(windows)]
+        self.configure_selection();
         self.apply_model_config(&config.model);
 
         let Some(reload) = &mut self.reload else {

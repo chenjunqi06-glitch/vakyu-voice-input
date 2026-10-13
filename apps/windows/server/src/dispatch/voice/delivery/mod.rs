@@ -3,7 +3,6 @@
 mod state;
 mod ticket;
 
-use std::collections::HashMap;
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
@@ -156,16 +155,6 @@ impl DeliveryBridge {
                 };
             }
             self.0.1.notify_all();
-        }
-    }
-}
-
-impl Default for State {
-    fn default() -> Self {
-        Self {
-            clients: HashMap::new(),
-            next: 0,
-            pending: None,
         }
     }
 }

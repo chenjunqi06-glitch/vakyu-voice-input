@@ -2,6 +2,7 @@
 
 mod actions;
 mod capture;
+mod reading;
 mod settings;
 mod translation;
 
@@ -32,6 +33,12 @@ pub struct Controller {
     practice: Option<PracticeSession>,
 
     translator: Option<VoicePracticeTranslator>,
+
+    /// 划词翻译专用实例，与跟读的翻译器互不取消。
+    reader: Option<VoicePracticeTranslator>,
+
+    /// 正在等译文的划词请求：宿主的 id 与目标语言。
+    reading: Option<(u64, qingjian_core::Language)>,
 
     round: u64,
 
@@ -78,6 +85,8 @@ impl Controller {
             game,
             practice: None,
             translator: None,
+            reader: None,
+            reading: None,
             round: 0,
             generation: 0,
             active: false,
@@ -105,7 +114,7 @@ impl Controller {
     }
 
     pub fn poll_interval(&self) -> Duration {
-        if self.ready && !self.active {
+        if self.ready && !self.active && self.reading.is_none() {
             Duration::from_secs(1)
         } else {
             Duration::from_millis(20)
@@ -163,6 +172,7 @@ impl Controller {
             Command::Action { action, index } => self.action(action, index),
             Command::CommitResult { id, ok, message } => self.commit_result(id, ok, message),
             Command::Set { key, value } => self.set(&key, value),
+            Command::Translate { id, text } => self.translate_selection(id, &text),
             Command::Reload => self.reload(),
             Command::Shutdown => {
                 self.cancel();
@@ -282,6 +292,7 @@ impl Controller {
             ));
         }
         self.translation_tick();
+        self.reading_tick();
         if self.resume_at.is_some_and(|at| now >= at) {
             self.resume_at = None;
             self.start_practice_capture();

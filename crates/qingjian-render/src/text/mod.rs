@@ -155,6 +155,11 @@ impl TextPainter {
     fn shape(&mut self, text: &str, style: &TextStyle) {
         let attrs = Attrs::new()
             .family(UI_FAMILY)
+            .weight(if style.bold {
+                cosmic_text::Weight::BOLD
+            } else {
+                cosmic_text::Weight::NORMAL
+            })
             .color(style.color.to_cosmic());
         self.buffer
             .set_metrics(Metrics::new(style.size, style.line_height));

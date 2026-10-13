@@ -4,6 +4,8 @@ use windows::Win32::Foundation::RECT;
 
 use crate::dispatch::{PracticeView, RecordingMode};
 
+// 保留 UI 线程内的现有值语义，避免为每次界面刷新分配堆内存。
+#[allow(clippy::large_enum_variant)]
 pub(super) enum VoiceFrame {
     Bubble {
         text: String,

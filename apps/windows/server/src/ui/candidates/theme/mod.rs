@@ -23,6 +23,8 @@ pub(super) const fn rgb(r: u8, g: u8, b: u8) -> COLORREF {
 pub(crate) struct Theme {
     pub text_font: HFONT,
 
+    pub bold_text_font: HFONT,
+
     pub annotation_font: HFONT,
 
     pub index_font: HFONT,
@@ -74,6 +76,7 @@ impl Theme {
         let palette = Palette::purple();
         Self {
             text_font: font(16),
+            bold_text_font: create_weighted_font(-scale(16), w!("Microsoft YaHei UI"), 700),
             annotation_font: font(12),
             index_font: font(11),
             symbol_font: create_font(-scale(15), w!("Segoe UI Symbol")),
@@ -98,6 +101,7 @@ impl Drop for Theme {
     fn drop(&mut self) {
         for font in [
             self.text_font,
+            self.bold_text_font,
             self.annotation_font,
             self.index_font,
             self.symbol_font,
@@ -111,13 +115,17 @@ impl Drop for Theme {
 
 /// 缺字由 GDI 字体链回落。`height` 为负的字符高度。
 fn create_font(height: i32, face: PCWSTR) -> HFONT {
+    create_weighted_font(height, face, FW_NORMAL)
+}
+
+fn create_weighted_font(height: i32, face: PCWSTR, weight: i32) -> HFONT {
     unsafe {
         CreateFontW(
             height,
             0,
             0,
             0,
-            FW_NORMAL,
+            weight,
             0,
             0,
             0,

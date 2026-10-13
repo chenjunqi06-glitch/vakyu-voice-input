@@ -187,6 +187,13 @@ Assert-PeArchitecture (Join-Path $VoiceRuntimeDirectory 'python\python.exe') 0x8
 foreach ($folder in @('python', 'app', 'models', 'licenses')) {
     Copy-CleanTree (Join-Path $VoiceRuntimeDirectory $folder) (Join-Path $Payload "voice-runtime\$folder")
 }
+# 缓存的运行时提供 Python 与模型；应用脚本必须来自本次构建源码。
+$appSource = Join-Path $Repo 'apps\windows\server\voice-runtime'
+Get-ChildItem -LiteralPath $appSource -File -Filter '*.py' |
+    Where-Object { $_.Name -notmatch '(^test|_tests[.]py$|^benchmark)' } |
+    ForEach-Object { Copy-RequiredFile $_.FullName (Join-Path $Payload ('voice-runtime\app\' + $_.Name)) }
+Copy-RequiredFile (Join-Path $appSource 'README.md') (Join-Path $Payload 'voice-runtime\app\README.md')
+Copy-RequiredFile (Join-Path $appSource 'requirements.txt') (Join-Path $Payload 'voice-runtime\app\requirements.txt')
 foreach ($metadata in @('sources.json', 'models-manifest.json', 'requirements-win64.lock')) {
     Copy-RequiredFile (Join-Path $VoiceRuntimeDirectory $metadata) (Join-Path $Payload "voice-runtime\$metadata")
 }

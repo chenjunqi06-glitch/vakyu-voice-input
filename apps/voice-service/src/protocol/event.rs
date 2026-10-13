@@ -11,6 +11,7 @@ pub enum Event {
         voice_input: bool,
         practice: bool,
         learn_english: bool,
+        send_translation: bool,
         demo: bool,
         shortcut: String,
         dictation_key: String,
@@ -47,6 +48,13 @@ pub enum Event {
     Hide,
     Error {
         message: String,
+    },
+    /// 划词翻译结果：`ok` 时 `text` 是译文，否则是可读的失败提示；`target` 为 en / zh。
+    Translation {
+        id: u64,
+        ok: bool,
+        text: String,
+        target: String,
     },
     SettingResult {
         key: String,

@@ -103,6 +103,16 @@ impl Router {
         }
     }
 
+    /// 划词翻译的「译」图标跟着 `[shortcut] translate_selection_icon` 与云服务设置走；UI 线程比较后才重建。
+    #[cfg(windows)]
+    pub(super) fn configure_selection(&self) {
+        let config = self
+            .config
+            .translate_selection_icon
+            .then(|| self.voice_translation.clone());
+        self.status.configure_selection(config);
+    }
+
     /// 写回配置文件一个键；没有配置路径（测试）就只改内存。
     fn persist(&self, section: &str, key: &str, value: impl Into<toml_edit::Value>) {
         let Some(path) = self.config_path() else {
@@ -134,6 +144,9 @@ impl Router {
                     scheme: Some(scheme_label(self.config.scheme, self.config.wubi))
                         .filter(|label| !label.is_empty()),
                     full_width: self.full_width_for(english),
+                    practice: self.config.voice_input && self.config.voice_english_practice,
+                    send_translation: self.config.voice_practice_send_translation,
+                    learn_english: self.config.voice_practice_learn_english,
                     theme: self.config.theme,
                     anchor: self.config.status_pos,
                 });

@@ -113,6 +113,11 @@ impl Renderer {
     fn status_cell_width(&mut self, cell: &StatusCell, m: &Metrics) -> f32 {
         match cell {
             StatusCell::Text { text, .. } => self.measure(text, &m.text_style()).width,
+            StatusCell::Toggle { text, .. } => {
+                let mut style = m.text_style();
+                style.bold = true;
+                self.measure(text, &style).width
+            }
             StatusCell::Gear => m.px(GEAR_SIZE),
         }
     }
@@ -138,6 +143,32 @@ impl Renderer {
                 let left = x + (width - size.width) / 2.0;
                 let top = y + (height - size.height) / 2.0;
                 self.draw_text(canvas, text, &style, left, top);
+            }
+            StatusCell::Toggle { text, active } => {
+                let color = if *active {
+                    crate::color::Color::rgb(46, 24, 78)
+                } else {
+                    m.theme.colors.gloss
+                };
+                if *active {
+                    canvas.fill_rect(
+                        x + m.px(2.0),
+                        y + m.px(2.0),
+                        width - m.px(4.0),
+                        height - m.px(4.0),
+                        crate::color::Color::rgb(255, 220, 92),
+                    );
+                }
+                let mut style = m.style(m.theme.text_font, color);
+                style.bold = *active;
+                let size = self.measure(text, &style);
+                self.draw_text(
+                    canvas,
+                    text,
+                    &style,
+                    x + (width - size.width) / 2.0,
+                    y + (height - size.height) / 2.0,
+                );
             }
             StatusCell::Gear => {
                 let size = m.px(GEAR_SIZE);

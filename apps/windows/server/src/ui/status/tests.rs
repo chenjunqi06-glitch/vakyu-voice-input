@@ -52,6 +52,9 @@ fn logo_header_does_not_toggle_controls() {
             zhuyin: false,
             scheme: None,
             full_width: true,
+            practice: true,
+            send_translation: true,
+            learn_english: true,
             theme: ThemeMode::Light,
             anchor: None,
         });
@@ -74,8 +77,9 @@ fn logo_header_does_not_toggle_controls() {
                 .iter()
                 .map(|(edge, _)| *edge)
                 .collect();
-            assert_eq!(edges.len(), 3);
+            assert_eq!(edges.len(), 5);
             assert!(edges.windows(2).all(|pair| pair[0] < pair[1]));
+            let right = *edges.last().unwrap();
             let x = margin + edges[0] / 2;
             let y = margin + (top + bottom) / 2;
             events.lock().unwrap().clear();
@@ -84,7 +88,7 @@ fn logo_header_does_not_toggle_controls() {
                 (x, margin + top - 1),
                 (margin - 1, y),
                 (x, margin + bottom),
-                (margin + edges[2], y),
+                (margin + right, y),
             ] {
                 bar.placement.on_click(x, y);
             }
@@ -102,7 +106,7 @@ fn logo_header_does_not_toggle_controls() {
             logo::with_mark(dpi, |mark| {
                 assert!(margin >= mark.height() as i32 / 2, "外露部分不能被位图裁剪");
                 assert!(mark.height() as i32 / 2 < top, "logo不能盖住功能格");
-                assert!(logo::left(dpi) + mark.width() as i32 <= edges[2]);
+                assert!(logo::left(dpi) + mark.width() as i32 <= right);
             })
             .expect("Vakyu完整字标必须解码成功");
             if let Some(path) = path {

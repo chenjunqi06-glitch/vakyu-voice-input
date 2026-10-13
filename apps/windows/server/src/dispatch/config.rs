@@ -62,6 +62,9 @@ pub struct RouterConfig {
 
     pub voice_practice_learn_english: bool,
 
+    /// 跟读读完后填入译文（说中文、读英文、发英文）；关着填入原话。
+    pub voice_practice_send_translation: bool,
+
     pub voice_practice_demo: bool,
 
     pub voice_practice_shortcut: PracticeShortcut,
@@ -90,6 +93,9 @@ pub struct RouterConfig {
 
     /// 「翻译选中文字」快捷键（`[shortcut] translate_selection`）。
     pub translate_selection: KeyCombo,
+
+    /// 任意软件选中文字后浮出「译」小图标（`[shortcut] translate_selection_icon`）。
+    pub translate_selection_icon: bool,
 
     /// 悬浮状态条开关（`[status_bar] enabled`）。
     pub status_enabled: bool,
@@ -146,6 +152,7 @@ impl From<&Config> for RouterConfig {
             voice_hold_ms: config.shortcut.voice_hold_ms(),
             voice_english_practice: config.shortcut.voice_english_practice,
             voice_practice_learn_english: config.shortcut.voice_practice_learn_english,
+            voice_practice_send_translation: config.shortcut.voice_practice_send_translation,
             voice_practice_demo: config.shortcut.voice_practice_demo,
             voice_practice_shortcut: config.shortcut.voice_practice_shortcut,
             voice_practice_similarity: config.shortcut.voice_practice_similarity.min(100),
@@ -160,6 +167,7 @@ impl From<&Config> for RouterConfig {
             },
             delete_keys: config.shortcut.delete_keys().into(),
             translate_selection: config.shortcut.translate_selection,
+            translate_selection_icon: config.shortcut.translate_selection_icon,
             status_enabled: config.status_bar.enabled,
             status_pos: config.status_bar.x.zip(config.status_bar.y),
             scheme: config.general.scheme(),

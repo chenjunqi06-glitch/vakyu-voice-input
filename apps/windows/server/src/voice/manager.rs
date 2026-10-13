@@ -92,6 +92,7 @@ impl VoiceManager {
     }
 
     /// 译句只用于本轮本机识别提示；普通口述不会继承上一轮练习内容。
+    #[cfg(test)]
     pub fn start_practice(&mut self, expected: &str) -> VoiceUpdate {
         self.start_practice_in_language(expected, Language::English)
     }

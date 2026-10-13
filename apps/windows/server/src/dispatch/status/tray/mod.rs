@@ -20,6 +20,7 @@ impl Router {
             voice_input: self.config.voice_input,
             english_practice: self.config.voice_english_practice,
             learn_english: self.config.voice_practice_learn_english,
+            send_translation: self.config.voice_practice_send_translation,
             practice_demo: self.config.voice_practice_demo,
             cloud: self.config.cloud_enabled,
             status_bar: self.config.status_enabled,
@@ -28,6 +29,10 @@ impl Router {
     }
 
     pub(in crate::dispatch) fn handle_tray(&mut self, action: TrayAction) {
+        if let TrayAction::ToggleShadowing | TrayAction::ToggleSendTranslation = action {
+            self.toggle_practice_output(action == TrayAction::ToggleSendTranslation);
+            return;
+        }
         let setting = match action {
             TrayAction::ToggleVoiceInput => ("shortcut", "voice_input", !self.config.voice_input),
             TrayAction::ToggleEnglishPractice => (
@@ -55,6 +60,7 @@ impl Router {
                 self.status.open_settings();
                 return;
             }
+            TrayAction::ToggleShadowing | TrayAction::ToggleSendTranslation => return,
         };
         // 菜单被禁用的项在这里也拦住，避免旧菜单状态下启用无效组合。
         if matches!(action, TrayAction::ToggleEnglishPractice) && !self.config.voice_input
@@ -86,6 +92,48 @@ impl Router {
             TrayAction::ToggleCloud => self.config.cloud_enabled = setting.2,
             TrayAction::ToggleStatusBar => self.config.status_enabled = setting.2,
             _ => unreachable!(),
+        }
+        self.expire_voice();
+        #[cfg(windows)]
+        self.configure_global_voice();
+        self.reconcile_status();
+    }
+
+    /// 状态条「跟读 / 发英」两格：点亮一格就开启跟读并选定读完填入原话还是译文，再点同一格关闭跟读。
+    /// 两格互斥；从这里开启时顺带打开语音输入，否则跟读快捷键不会触发。
+    fn toggle_practice_output(&mut self, send_translation: bool) {
+        let active = self.config.voice_english_practice
+            && self.config.voice_input
+            && self.config.voice_practice_send_translation == send_translation;
+        let mut writes: Vec<(&str, bool)> = vec![("voice_english_practice", !active)];
+        if !active {
+            writes.push(("voice_practice_send_translation", send_translation));
+            if !self.config.voice_input {
+                writes.push(("voice_input", true));
+            }
+        }
+        tracing::info!(send_translation, enable = !active, "状态条：切换跟读方式");
+        if let Some(path) = self.config_path().map(ToOwned::to_owned) {
+            let loaded = Config::load(&path).and_then(|_| {
+                for (key, value) in &writes {
+                    Config::set_value(&path, "shortcut", key, *value)?;
+                }
+                Config::load(&path)
+            });
+            match loaded {
+                Ok(config) => self.apply_config(&config),
+                Err(error) => tracing::warn!(%error, "跟读方式保存失败，保持当前配置"),
+            }
+            return;
+        }
+        for (key, value) in writes {
+            match key {
+                "voice_english_practice" => self.config.voice_english_practice = value,
+                "voice_practice_send_translation" => {
+                    self.config.voice_practice_send_translation = value
+                }
+                _ => self.config.voice_input = value,
+            }
         }
         self.expire_voice();
         #[cfg(windows)]

@@ -1,4 +1,4 @@
-//! 悬浮状态条：桌面上常驻、可拖动的三格浮窗 `[中 / 英][，。/ ,.][⚙]`。缺省由 Miracle 渲染器画（[`super::painter`]），
+//! 悬浮状态条：桌面上常驻、可拖动的五格浮窗 `[中 / 英][，。/ ,.][跟读][发英][⚙]`。缺省由 Miracle 渲染器画（[`super::painter`]），
 //! `renderer = "system"` 时复用分层窗口合成器与候选窗口的 GDI 主题。
 //!
 //! 按下鼠标先 `DragDetect`：挪出拖动阈值就交给系统的移动循环（`WM_NCLBUTTONDOWN` + `HTCAPTION`），
@@ -79,10 +79,12 @@ pub(super) struct StatusBar {
     painter: SharedPainter,
 }
 
-/// 三格从左到右的动作。
-const ACTIONS: [StatusAction; 3] = [
+/// 各格从左到右的动作；[`StatusBar::status_cells`] 与 [`StatusBar::cells`] 按同一顺序出格。
+const ACTIONS: [StatusAction; 5] = [
     StatusAction::ToggleMode,
     StatusAction::TogglePunctuation,
+    StatusAction::TogglePractice,
+    StatusAction::ToggleSendTranslation,
     StatusAction::OpenSettings,
 ];
 
@@ -182,28 +184,61 @@ impl StatusBar {
         }
     }
 
-    /// 渲染器要的三格：模式（品牌色）、标点（生效时品牌色，否则灰）、齿轮。
+    /// 「跟读 / 发英」两格的文字与是否点亮：两格互斥，跟读关着时都是灰的。
+    fn practice_cells(view: &StatusView) -> [(&'static str, bool); 2] {
+        let send_label = if view.learn_english {
+            "发英"
+        } else {
+            "发中"
+        };
+        [
+            ("跟读", view.practice && !view.send_translation),
+            (send_label, view.practice && view.send_translation),
+        ]
+    }
+
+    /// 渲染器要的五格：模式（品牌色）、标点 / 跟读 / 发英（生效时品牌色，否则灰）、齿轮。
     fn status_cells(view: &StatusView) -> Vec<StatusCell> {
+        let [shadowing, sending] = Self::practice_cells(view);
         vec![
             StatusCell::text(Self::mode_text(view), true),
             StatusCell::text(if view.full_width { "，。" } else { ",." }, view.full_width),
+            StatusCell::toggle(shadowing.0, shadowing.1),
+            StatusCell::toggle(sending.0, sending.1),
             StatusCell::Gear,
         ]
     }
 
-    /// GDI 画法的三格，顺序同 [`ACTIONS`]。
+    /// GDI 画法的五格，顺序同 [`ACTIONS`]。
     fn cells(&self, theme: &Theme) -> Vec<CellSpec> {
         let data = self.data.borrow();
         let Some(view) = data.as_ref() else {
             return Vec::new();
         };
         let punctuation_active = view.full_width;
+        let toggle = |(text, active): (&str, bool), action| CellSpec {
+            text: text.to_owned(),
+            font: if active {
+                theme.bold_text_font
+            } else {
+                theme.text_font
+            },
+            color: if active {
+                COLORREF(0x4E182E)
+            } else {
+                theme.gloss_color
+            },
+            action,
+            active,
+        };
+        let [shadowing, sending] = Self::practice_cells(view);
         vec![
             CellSpec {
                 text: Self::mode_text(view),
                 font: theme.text_font,
                 color: theme.cloud_color,
                 action: StatusAction::ToggleMode,
+                active: false,
             },
             CellSpec {
                 text: if punctuation_active { "，。" } else { ",." }.to_owned(),
@@ -214,12 +249,16 @@ impl StatusBar {
                     theme.gloss_color
                 },
                 action: StatusAction::TogglePunctuation,
+                active: false,
             },
+            toggle(shadowing, StatusAction::TogglePractice),
+            toggle(sending, StatusAction::ToggleSendTranslation),
             CellSpec {
                 text: "\u{2699}".to_owned(),
                 font: theme.symbol_font,
                 color: theme.gloss_color,
                 action: StatusAction::OpenSettings,
+                active: false,
             },
         ]
     }
@@ -385,6 +424,18 @@ fn paint_cells(
                     bottom: client.bottom - inset,
                 },
                 separator,
+            );
+        }
+        if cell.active {
+            view::fill_rect(
+                hdc,
+                RECT {
+                    left: x + 2,
+                    top: client.top + 2,
+                    right: x + width - 2,
+                    bottom: client.bottom - 2,
+                },
+                COLORREF(0x5CDCFF),
             );
         }
         let ox = x + (width - size.cx) / 2;

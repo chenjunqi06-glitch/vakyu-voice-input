@@ -43,12 +43,12 @@ pub enum VoicePracticeError {
 impl VoicePracticeError {
     pub fn user_message(self) -> &'static str {
         match self {
-            Self::MissingApiKey => "请先在云服务设置中填写 API 密钥，再使用跟读。",
+            Self::MissingApiKey => "请先在云服务设置中填写 API 密钥，再使用跟读或划词翻译。",
             Self::InvalidEndpoint => "云服务地址无效，请检查云服务设置。",
             Self::MissingModel => "请先在云服务设置中填写模型名称。",
             Self::UnsupportedLanguage => "跟读翻译目前支持中文和英文，请重新选择学习语言。",
             Self::EmptySource => "没有识别到需要翻译的内容，请重新录音。",
-            Self::SourceTooLong => "这段内容超过 4000 字，请分次录音。",
+            Self::SourceTooLong => "这段内容超过 4000 字，请分段处理。",
             Self::InvalidTranslation => "未取得所选语言的有效译文，请重试。",
             Self::IncompleteTranslation => "译文不完整，已停止本次跟读，请重试。",
             Self::TimedOut => "翻译等待超时，请检查网络后重试。",

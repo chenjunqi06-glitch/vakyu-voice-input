@@ -106,6 +106,13 @@ pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> 
                 .on_toggled(context.callback(Message::VoicePracticeLearnEnglish)),
         ),
         field(
+            "读完发出译文 / Send the translation",
+            "开启：说中文 → 跟读英文 → 填入英文（学中文时：说英文 → 跟读中文 → 填入中文）。关闭：填入原话。悬浮状态条上的「跟读」「发英」两格可直接切换，不用进设置。",
+            ToggleSwitch::new()
+                .is_on(s.voice_practice_send_translation)
+                .on_toggled(context.callback(Message::VoicePracticeSendTranslation)),
+        ),
+        field(
             "口语跟读快捷键",
             "推荐右 Ctrl + 右 Alt：开启跟读后，两键同时按住录原话（顺序不限），松开进入跟读。也支持 Ctrl+Alt+E、F 功能键或与普通语音不同的单侧 Alt。录入后全部松开再保存，不允许单独字母、数字或空格。保存检查系统注册占用和两个语音入口的冲突；不能完整区分左右修饰键或检测软件内部快捷键。",
             practice_shortcut_control(settings, context),
@@ -179,6 +186,13 @@ pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> 
                 s.translate_selection.modifiers,
                 context.callback(Message::TranslateSelection),
             ),
+        ),
+        field(
+            "选中文字浮出「译」图标",
+            "在任意软件里用鼠标选中文字后，鼠标旁出现「译」小图标，点它弹出译文，可一键复制。需要云服务的 API 密钥；会临时借用剪贴板读取选中的文字，读完恢复原来的文字内容。",
+            ToggleSwitch::new()
+                .is_on(s.translate_selection_icon)
+                .on_toggled(context.callback(Message::TranslateSelectionIcon)),
         ),
     ];
     page("快捷键", StackPanel::new().spacing(16.0).children(rows))

@@ -16,6 +16,9 @@ pub(crate) struct TextStyle {
 
     pub color: Color,
 
+    /// 使用粗体突出已开启的开关。
+    pub bold: bool,
+
     /// 画删除线（纠错改掉的拼音）。
     pub strike: bool,
 
@@ -34,6 +37,7 @@ impl TextStyle {
             points,
             line_height: font.line_height,
             color,
+            bold: false,
             strike: false,
             underline: false,
             gamma,

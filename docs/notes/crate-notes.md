@@ -276,6 +276,10 @@ IMK 输入法，源码按 `app / host / imk / candidates / menubar / preferences
 
 `PracticeProfile` / `PracticeRound` / `PracticeLevel` 管理平台无关的经验与轮次结算：累计 0–119 XP 为新手 Lv.1，120–499 XP 为进阶 Lv.2，500 XP 起为挑战 Lv.3；轮次开始时固定等级，完成后的升级在下一轮生效。Final 确认完整匹配、原目标复核且系统接收输入成功后，按显示单元数奖励，单轮上限 60 XP；同一轮只能领取一次，取消、失败和临时结果均不奖励、不扣分。Windows `voice/global/game` 仅把经验和完成次数原子保存到当前用户的 `%LOCALAPPDATA%\Qingjian\` 下，英语使用 `english-practice-progress.json`，中文使用 `chinese-practice-progress.json`，方向切换不覆盖另一份进度。不使用 IP、句子或录音识别用户；文件损坏时保留原文件，当前运行只在内存累计。
 
+`[shortcut] voice_practice_send_translation=false` 决定读完填入什么：默认原话；开启后 `PracticeSession::with_send_translation(true)` 让 `completed_output()` 交付刚读完的译文（说中文、读英文、发英文）。开关在每轮开始时锁进会话，中途切换只影响下一轮；门禁不变，只有 `Complete` 才交付。Windows 状态条「跟读 / 发英」两格与托盘、mac 快捷浮窗与菜单都走同一组配置键（`voice_english_practice` + 本键），两格互斥。
+
+划词翻译复用同一翻译器：`VoicePracticeTranslator::new_reading` 建独立实例（与跟读互不取消），`request_reading` 按 `reading_target`（汉字多于拉丁字母译成英文，否则译成中文）定方向；阅读提示与 `reading::parse_reply` 保留换行，其余校验与跟读相同。Windows 由 `ui/selection` 的低层鼠标钩子认「I 形光标下拖选或双击」，弹不抢焦点的「译」图标，点击后完整备份剪贴板（全局内存格式）、模拟 Ctrl+C、读到文字后放回；`[shortcut] translate_selection_icon=true` 且能建出翻译器（有 API 密钥）才装钩子。macOS 走系统服务菜单（`VoiceInfo.plist` 的 `NSServices`，`NSMessage=translateSelection`），语音宿主把文字以协议 `translate` 命令交给服务、收 `translation` 事件显示小窗，不碰剪贴板。
+
 `[shortcut] voice_practice_demo=true` 默认开启示范，但不改变默认关闭的 `voice_english_practice` 总开关或用户已保存的开关值。Windows 快捷键页可单独关闭示范。`voice/global/demo` 的独立 SAPI TTS 工作线程按目标语言选择本机中英文声音，通过代次取消播放；新手/进阶/挑战的语速分别为 -2/-1/0。`Demonstrating` 阶段麦克风保持关闭，播放结束后再等 400 ms 消散尾音，复核原目标和活动代次后才自动开麦；未找到对应语言声音或播放失败时明确显示示范不可用，改为直接跟读，不能直接放行原文。关闭示范时直接进入跟读准备。翻译、示范、录音和取消均沿用原轮次与焦点保护。
 
 跟读在松开快捷键后显示原文及目标译句，后台每拍续约浮窗租约，译句围绕当前显示单元最多显示五行；已读深色、未读浅色，当前位置有下划线和独立提示。中文目标提供本地拼音，英文音标仅从发音词典取得。`PracticeView` 带 `level_label` / `level_progress` 显示当前语言等级徽章与真实经验，底部状态行区分示范播放、跟读录音及收尾，界面不推算经验。原输入框、活动代次和权限在翻译前、再次开麦前与上屏前复核；Esc、切换学习方向、关闭总开关、安全桌面变化或后台更新取消整轮。翻译/识别失败不放行原文，跟读完成仅填入、不发送 Enter。全局启动失败且跟读已开启时禁用旧语音回退，避免绕过门禁；开启跟读或切换方向也会撤销旧轮次及其迟到结果。常规模式仍是按住显示、松开收窗。

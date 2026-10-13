@@ -87,6 +87,7 @@ impl Router {
             },
             english_practice: self.config.voice_english_practice,
             learn_english: self.config.voice_practice_learn_english,
+            send_translation: self.config.voice_practice_send_translation,
             practice_demo: self.config.voice_practice_demo,
             practice_match: qingjian_learning::PracticeMatchConfig {
                 word_similarity: self.config.voice_practice_similarity,

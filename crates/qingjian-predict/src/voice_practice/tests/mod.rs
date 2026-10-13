@@ -3,4 +3,5 @@
 mod client;
 mod direction;
 mod prompt;
+mod reading;
 mod state;

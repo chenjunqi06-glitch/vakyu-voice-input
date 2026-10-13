@@ -200,6 +200,12 @@ impl Component for Settings {
             Message::VoicePracticeLearnEnglish(on) => {
                 self.save("shortcut", "voice_practice_learn_english", on);
             }
+            Message::VoicePracticeSendTranslation(on) => {
+                self.save("shortcut", "voice_practice_send_translation", on);
+            }
+            Message::TranslateSelectionIcon(on) => {
+                self.save("shortcut", "translate_selection_icon", on);
+            }
             Message::PracticeShortcutRecord if !self.hotkey.saving => {
                 let (generation, cancelled) = self.hotkey.begin();
                 context.spawn_background(move |cancel| {

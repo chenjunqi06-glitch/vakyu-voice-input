@@ -21,8 +21,10 @@ pub(super) fn script_fonts(locale: &str) -> Vec<PathBuf> {
     let mut fonts = Vec::new();
     if locale.starts_with("zh-TW") || locale.starts_with("zh-HK") {
         fonts.push(dir.join("msjh.ttc"));
+        fonts.push(dir.join("msjhbd.ttc"));
     } else if !locale.starts_with("ja") {
         fonts.push(dir.join("msyh.ttc"));
+        fonts.push(dir.join("msyhbd.ttc"));
     }
     fonts.push(dir.join("YuGothR.ttc"));
     fonts.push(dir.join("yugothm.ttc"));

@@ -44,4 +44,7 @@ pub(super) enum UiCommand {
 
     /// 换画法（渲染器 / 字体）。
     Configure(RenderSettings),
+
+    /// 开关划词翻译：`Some` 带上云服务设置，`None` 关闭「译」图标。
+    SelectionConfigure(Box<Option<qingjian_predict::PredictConfig>>),
 }

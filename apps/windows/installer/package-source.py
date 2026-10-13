@@ -24,7 +24,7 @@ def main():
             if not path.is_file() or path.is_symlink():
                 continue
             relative = path.relative_to(root)
-            if any(part in {"target", "outputs", "node_modules", "__pycache__", ".git", ".venv", "build", ".build"} for part in relative.parts):
+            if any(part in {"target", "outputs", "node_modules", "__pycache__", ".git", ".venv", "build", ".build"} for part in relative.parts) and not relative.as_posix().startswith("apps/windows/server/src/voice/global/target/"):
                 continue
             if path.suffix in {".pyc", ".pyo", ".bak", ".old", ".log"}:
                 continue

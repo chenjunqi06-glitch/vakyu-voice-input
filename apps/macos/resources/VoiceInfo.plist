@@ -12,5 +12,16 @@
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>LSUIElement</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
+  <key>NSServices</key>
+  <array>
+    <dict>
+      <key>NSMenuItem</key><dict><key>default</key><string>用 Vakyu 翻译</string></dict>
+      <key>NSMessage</key><string>translateSelection</string>
+      <key>NSPortName</key><string>VakyuVoice</string>
+      <key>NSSendTypes</key><array><string>NSStringPboardType</string><string>public.utf8-plain-text</string></array>
+      <key>NSRequiredContext</key><dict/>
+      <key>NSTimeout</key><string>5000</string>
+    </dict>
+  </array>
   <key>NSMicrophoneUsageDescription</key><string>按住语音快捷键时在本机识别说话；启用跟读时用麦克风判断朗读进度，不上传音频。</string>
 </dict></plist>
