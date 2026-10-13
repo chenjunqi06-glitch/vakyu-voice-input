@@ -26,6 +26,15 @@ pub struct VoicePracticeTranslator {
 impl VoicePracticeTranslator {
     /// 只复用云服务凭据和模型，不要求 `predict.enabled`，不读取光标上下文。
     pub fn new(config: &PredictConfig) -> Result<Self, VoicePracticeError> {
+        Self::spawn(config, false)
+    }
+
+    /// 划词翻译用的独立实例：译文供阅读、保留换行；与跟读实例互不取消。
+    pub fn new_reading(config: &PredictConfig) -> Result<Self, VoicePracticeError> {
+        Self::spawn(config, true)
+    }
+
+    fn spawn(config: &PredictConfig, reading: bool) -> Result<Self, VoicePracticeError> {
         let api_key = config
             .resolve_api_key()
             .ok_or(VoicePracticeError::MissingApiKey)?;
@@ -54,7 +63,7 @@ impl VoicePracticeTranslator {
         let (translator, requests, responses) = Self::channels();
         std::thread::Builder::new()
             .name("qingjian-voice-translation".to_owned())
-            .spawn(move || runtime.block_on(worker::run(requests, responses, client)))
+            .spawn(move || runtime.block_on(worker::run(requests, responses, client, reading)))
             .map_err(|_| VoicePracticeError::Unavailable)?;
         Ok(translator)
     }
@@ -62,6 +71,17 @@ impl VoicePracticeTranslator {
     /// 兼容既有中文转英文调用；反向跟读使用 `request_to`。
     pub fn request(&mut self, request_id: u64, chinese: &str) -> Result<(), VoicePracticeError> {
         self.request_to(request_id, chinese, Language::English)
+    }
+
+    /// 划词翻译：按 [`super::reading_target`] 自动定方向，返回本次的目标语言。
+    pub fn request_reading(
+        &mut self,
+        request_id: u64,
+        source: &str,
+    ) -> Result<Language, VoicePracticeError> {
+        let target = super::reading::reading_target(source);
+        self.request_to(request_id, source, target)?;
+        Ok(target)
     }
 
     /// 新一轮连同目标语言替换旧一轮，取消旧网络 future；不会积压请求。

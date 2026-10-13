@@ -64,7 +64,7 @@ pub(super) fn parse_reply(content: &str, target: Language) -> Result<String, Voi
     Ok(translation.split_whitespace().collect::<Vec<_>>().join(" "))
 }
 
-fn valid_target_script(translation: &str, target: Language) -> bool {
+pub(super) fn valid_target_script(translation: &str, target: Language) -> bool {
     match target {
         Language::English => {
             translation.chars().any(|c| c.is_ascii_alphabetic())
@@ -83,10 +83,10 @@ fn valid_target_script(translation: &str, target: Language) -> bool {
     }
 }
 
-fn is_latin(c: char) -> bool {
+pub(super) fn is_latin(c: char) -> bool {
     c.is_ascii_alphabetic() || matches!(c as u32, 0x00C0..=0x024F | 0x1E00..=0x1EFF)
 }
 
-fn is_han(c: char) -> bool {
+pub(super) fn is_han(c: char) -> bool {
     matches!(c as u32, 0x3400..=0x4DBF | 0x4E00..=0x9FFF | 0xF900..=0xFAFF | 0x20000..=0x323AF)
 }

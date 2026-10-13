@@ -8,6 +8,7 @@ use tokio::sync::watch;
 use super::completion::Completion;
 use super::error::VoicePracticeError;
 use super::prompt;
+use super::reading;
 use super::request::Request;
 use super::translation::VoicePracticeTranslation;
 use crate::chat_client::ChatClient;
@@ -16,19 +17,29 @@ pub(super) async fn run(
     requests: watch::Receiver<Option<Request>>,
     responses: watch::Sender<Option<Completion>>,
     client: ChatClient,
+    reading: bool,
 ) {
     serve(requests, responses, |source, target| {
         let client = &client;
         async move {
+            let system = if reading {
+                reading::system_prompt(target)?
+            } else {
+                prompt::system_prompt(target)?
+            };
             let content = client
                 .chat_private(
-                    prompt::system_prompt(target)?,
+                    system,
                     &prompt::user_prompt(&source, target)?,
                     prompt::MAX_TOKENS,
                 )
                 .await
                 .map_err(VoicePracticeError::from)?;
-            prompt::parse_reply(&content, target)
+            if reading {
+                reading::parse_reply(&content, target)
+            } else {
+                prompt::parse_reply(&content, target)
+            }
         }
     })
     .await;
