@@ -12,6 +12,9 @@ pub(crate) struct VoiceConfig {
 
     pub learn_english: bool,
 
+    /// 读完后填入译文而不是原话；只影响之后开始的新一轮。
+    pub send_translation: bool,
+
     pub practice_demo: bool,
 
     pub practice_match: PracticeMatchConfig,
@@ -67,6 +70,7 @@ mod tests {
             },
             english_practice: practice,
             learn_english,
+            send_translation: false,
             practice_demo: false,
             practice_match: PracticeMatchConfig::default(),
             translation: PredictConfig::default(),

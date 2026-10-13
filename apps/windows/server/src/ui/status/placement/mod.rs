@@ -8,7 +8,7 @@ use windows::Win32::Foundation::{HWND, RECT};
 use windows::Win32::UI::WindowsAndMessaging::GetWindowRect;
 
 pub(super) use self::action::StatusAction;
-use crate::dispatch::StatusEvent;
+use crate::dispatch::{StatusEvent, TrayAction};
 use crate::ui::StatusEvents;
 
 /// 窗口过程也要读写的摆放状态，经 `PLACEMENTS` 按 HWND 查到。
@@ -78,6 +78,12 @@ impl Placement {
             Some(StatusAction::ToggleMode) => (self.events)(StatusEvent::ToggleMode),
             Some(StatusAction::TogglePunctuation) => {
                 (self.events)(StatusEvent::TogglePunctuation);
+            }
+            Some(StatusAction::TogglePractice) => {
+                (self.events)(StatusEvent::Tray(TrayAction::ToggleShadowing));
+            }
+            Some(StatusAction::ToggleSendTranslation) => {
+                (self.events)(StatusEvent::Tray(TrayAction::ToggleSendTranslation));
             }
             Some(StatusAction::OpenSettings) => crate::ui::open_settings(),
             None => {}

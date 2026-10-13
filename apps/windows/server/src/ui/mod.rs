@@ -9,6 +9,7 @@ mod command;
 mod layered;
 mod monitor;
 mod painter;
+mod selection;
 mod status;
 mod tray;
 mod voice;
@@ -37,6 +38,7 @@ use qingjian_platform::protocol::{Frame, ScreenRect};
 use self::candidates::CandidateWindow;
 use self::command::UiCommand;
 use self::painter::{Painter, SharedPainter};
+use self::selection::SelectionTranslate;
 use self::status::StatusBar;
 use self::tray::TrayIcon;
 use self::voice::VoiceWindow;
@@ -145,6 +147,10 @@ impl StatusSink for UiHandle {
         self.post(UiCommand::TrayConfigure(state));
     }
 
+    fn configure_selection(&self, config: Option<qingjian_predict::PredictConfig>) {
+        self.post(UiCommand::SelectionConfigure(Box::new(config)));
+    }
+
     fn open_settings(&self) {
         open_settings();
     }
@@ -208,6 +214,21 @@ fn run(commands: Receiver<UiCommand>, ready: &Sender<Option<u32>>, on_status: St
             None
         }
     };
+    let selection = match SelectionTranslate::new() {
+        Ok(selection) => Some(selection),
+        Err(error) => {
+            tracing::error!(%error, "建划词翻译窗口失败，将不显示「译」图标");
+            None
+        }
+    };
+    let ui = Ui {
+        window: &window,
+        status: status.as_ref(),
+        tray: tray.as_deref(),
+        voice: voice.as_ref(),
+        selection: selection.as_ref(),
+        painter: &painter,
+    };
     if ready.send(Some(thread_id)).is_err() {
         return;
     }
@@ -227,35 +248,14 @@ fn run(commands: Receiver<UiCommand>, ready: &Sender<Option<u32>>, on_status: St
                     UiCommand::Show(payload) => pending_show = Some(payload),
                     other => {
                         if let Some(payload) = pending_show.take() {
-                            apply(
-                                &window,
-                                status.as_ref(),
-                                tray.as_deref(),
-                                voice.as_ref(),
-                                &painter,
-                                UiCommand::Show(payload),
-                            );
+                            apply(&ui, UiCommand::Show(payload));
                         }
-                        apply(
-                            &window,
-                            status.as_ref(),
-                            tray.as_deref(),
-                            voice.as_ref(),
-                            &painter,
-                            other,
-                        );
+                        apply(&ui, other);
                     }
                 }
             }
             if let Some(payload) = pending_show {
-                apply(
-                    &window,
-                    status.as_ref(),
-                    tray.as_deref(),
-                    voice.as_ref(),
-                    &painter,
-                    UiCommand::Show(payload),
-                );
+                apply(&ui, UiCommand::Show(payload));
             }
             continue;
         }
@@ -266,14 +266,31 @@ fn run(commands: Receiver<UiCommand>, ready: &Sender<Option<u32>>, on_status: St
     }
 }
 
-fn apply(
-    window: &CandidateWindow,
-    status: Option<&StatusBar>,
-    tray: Option<&TrayIcon>,
-    voice: Option<&VoiceWindow>,
-    painter: &SharedPainter,
-    command: UiCommand,
-) {
+/// UI 线程上各窗口的借用，命令按类型分给它们。
+#[derive(Clone, Copy)]
+struct Ui<'a> {
+    window: &'a CandidateWindow,
+
+    status: Option<&'a StatusBar>,
+
+    tray: Option<&'a TrayIcon>,
+
+    voice: Option<&'a VoiceWindow>,
+
+    selection: Option<&'a SelectionTranslate>,
+
+    painter: &'a SharedPainter,
+}
+
+fn apply(ui: &Ui<'_>, command: UiCommand) {
+    let Ui {
+        window,
+        status,
+        tray,
+        voice,
+        selection,
+        painter,
+    } = *ui;
     match command {
         UiCommand::Show(payload) => {
             let (frame, rect) = *payload;
@@ -341,6 +358,11 @@ fn apply(
             }
         }
         UiCommand::Configure(settings) => Painter::configure(painter, &settings),
+        UiCommand::SelectionConfigure(config) => {
+            if let Some(selection) = selection {
+                selection.configure(*config);
+            }
+        }
     }
 }
 

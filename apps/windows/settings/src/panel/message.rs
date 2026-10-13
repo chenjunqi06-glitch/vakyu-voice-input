@@ -64,6 +64,8 @@ pub(crate) enum Message {
     VoiceEnglishPractice(bool),
     VoicePracticeLearnEnglish(bool),
     VoicePracticeDemo(bool),
+    VoicePracticeSendTranslation(bool),
+    TranslateSelectionIcon(bool),
     PracticeShortcutRecord,
     PracticeShortcutCancel,
     PracticeShortcutCaptured(u64, Result<qingjian_platform::PracticeShortcut, String>),

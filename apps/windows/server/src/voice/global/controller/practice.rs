@@ -87,13 +87,13 @@ impl Controller {
             .as_ref()
             .is_some_and(|session| session.phase == Phase::Complete)
         {
-            let original = self
+            let output = self
                 .practice
                 .as_ref()
-                .and_then(PracticeSession::completed_original)
+                .and_then(PracticeSession::completed_output)
                 .map(str::to_owned)
                 .expect("用户显式放行了句尾");
-            self.finish(original);
+            self.finish(output);
         } else {
             self.start_practice_recording();
         }
@@ -126,15 +126,22 @@ impl Controller {
         let sequence = active.sequence;
         self.voice.cancel();
         let (level, level_progress) = self.game.begin();
-        self.practice = Some(PracticeSession::new_for_language(
-            text.clone(),
-            level,
-            level_progress,
-            self.config.practice_match,
-            self.config.learn_english,
-        ));
+        self.practice = Some(
+            PracticeSession::new_for_language(
+                text.clone(),
+                level,
+                level_progress,
+                self.config.practice_match,
+                self.config.learn_english,
+            )
+            .with_send_translation(self.config.send_translation),
+        );
         self.hook.set_practice_active(true);
-        tracing::info!(sequence, "跟读练习开始准备翻译");
+        tracing::info!(
+            sequence,
+            send_translation = self.config.send_translation,
+            "跟读练习开始准备翻译"
+        );
         self.sink.set_voice_held(true);
         self.show_practice();
         if crate::voice::neural::runtime_root().is_none() {
@@ -389,12 +396,15 @@ impl Controller {
             }
             VoiceUpdate::Final { text } => {
                 if session.final_result(&text) {
-                    let original = session
-                        .completed_original()
-                        .expect("完整跟读才交付原话")
+                    let output = session
+                        .completed_output()
+                        .expect("完整跟读才交付原话或译文")
                         .to_owned();
-                    tracing::info!("跟读练习完成，准备填入原话");
-                    self.finish(original);
+                    tracing::info!(
+                        send_translation = session.sends_translation(),
+                        "跟读练习完成，准备填入"
+                    );
+                    self.finish(output);
                 } else if session.phase == Phase::Preparing {
                     self.start_practice_recording();
                 } else {

@@ -15,6 +15,15 @@ pub struct StatusView {
     /// 当前模式的全角标点开着（中英各记一份配置）；关着时格子显示 `,.` 画成灰的。
     pub full_width: bool,
 
+    /// 跟读练习开着（且语音输入开着），「跟读 / 发英」两格中的一格点亮。
+    pub practice: bool,
+
+    /// 跟读读完后填入译文：点亮「发英」格，否则点亮「跟读」格。
+    pub send_translation: bool,
+
+    /// 学英语方向；学中文时第二格写「发中」。
+    pub learn_english: bool,
+
     /// 外观模式。
     pub theme: ThemeMode,
 

@@ -9,6 +9,9 @@ pub struct TrayState {
 
     pub learn_english: bool,
 
+    /// 跟读读完后填入译文（说中文、读英文、发英文）。
+    pub send_translation: bool,
+
     pub practice_demo: bool,
 
     pub cloud: bool,

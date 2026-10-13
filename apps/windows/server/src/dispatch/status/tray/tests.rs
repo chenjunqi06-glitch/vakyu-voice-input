@@ -45,3 +45,25 @@ fn learning_direction_switch_is_independent_of_practice_enablement() {
     assert!(!router.tray_state().learn_english);
     assert!(router.tray_state().english_practice);
 }
+
+#[test]
+fn status_bar_practice_cells_are_mutually_exclusive_toggles() {
+    let mut router = Router::new(Engine::new(Dictionary::default()), RouterConfig::default());
+    router.config.voice_input = false;
+
+    router.handle_status_event(StatusEvent::Tray(TrayAction::ToggleSendTranslation));
+    assert!(
+        router.config.voice_input,
+        "从状态条开启跟读会顺带打开语音输入"
+    );
+    assert!(router.tray_state().english_practice);
+    assert!(router.tray_state().send_translation);
+
+    router.handle_status_event(StatusEvent::Tray(TrayAction::ToggleShadowing));
+    assert!(router.tray_state().english_practice);
+    assert!(!router.tray_state().send_translation);
+
+    router.handle_status_event(StatusEvent::Tray(TrayAction::ToggleShadowing));
+    assert!(!router.tray_state().english_practice);
+    assert!(!router.tray_state().send_translation);
+}

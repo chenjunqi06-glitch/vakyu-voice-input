@@ -39,6 +39,7 @@ const ID_STATUS: usize = 5;
 const ID_PUNCTUATION: usize = 6;
 const ID_SETTINGS: usize = 7;
 const ID_DIRECTION: usize = 8;
+const ID_SEND_TRANSLATION: usize = 9;
 
 static CLASS: WindowClass = WindowClass::new();
 
@@ -193,6 +194,15 @@ impl TrayIcon {
             checked(state.english_practice) | disabled(state.voice_input),
         );
         add(
+            ID_SEND_TRANSLATION,
+            if state.learn_english {
+                "读完发出英文（说中文 → 读英文 → 发英文）"
+            } else {
+                "读完发出中文（说英文 → 读中文 → 发中文）"
+            },
+            checked(state.english_practice && state.send_translation) | disabled(state.voice_input),
+        );
+        add(
             ID_DIRECTION,
             "学习英语 / Learn English（关闭学中文）",
             checked(state.learn_english),
@@ -236,6 +246,7 @@ impl TrayIcon {
             ID_VOICE => TrayAction::ToggleVoiceInput,
             ID_PRACTICE => TrayAction::ToggleEnglishPractice,
             ID_DIRECTION => TrayAction::ToggleLearningDirection,
+            ID_SEND_TRANSLATION => TrayAction::ToggleSendTranslation,
             ID_DEMO => TrayAction::TogglePracticeDemo,
             ID_CLOUD => TrayAction::ToggleCloud,
             ID_STATUS => TrayAction::ToggleStatusBar,

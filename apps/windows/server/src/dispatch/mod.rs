@@ -230,6 +230,8 @@ impl Router {
     pub fn set_status_sink(&mut self, sink: Box<dyn StatusSink>) {
         self.status = sink;
         self.status.configure_tray(self.tray_state());
+        #[cfg(windows)]
+        self.configure_selection();
     }
 
     pub fn set_voice_sink(&mut self, sink: Box<dyn VoiceSink>) {
