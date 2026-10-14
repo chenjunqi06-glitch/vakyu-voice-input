@@ -18,7 +18,7 @@ pub(super) enum VoiceFrame {
     },
 
     Practice {
-        view: PracticeView,
+        view: Box<PracticeView>,
 
         anchor: RECT,
     },
