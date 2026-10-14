@@ -72,8 +72,8 @@ pub struct ShortcutConfig {
     pub delete_candidate: Modifiers,
 }
 
-/// 自然人声的默认音色：语速偏慢、吐字清楚的女声，适合跟读示范。
-pub const DEFAULT_PRACTICE_SPEAKER: u16 = 20;
+/// 自然人声的默认音色：中等音高、吐字清楚的女声（编号 180，试听后选定）。
+pub const DEFAULT_PRACTICE_SPEAKER: u16 = 180;
 
 impl Default for ShortcutConfig {
     fn default() -> Self {

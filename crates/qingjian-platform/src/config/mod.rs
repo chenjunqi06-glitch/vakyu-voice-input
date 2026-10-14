@@ -190,8 +190,8 @@ voice_english_practice = false
 voice_practice_demo = true
 # 示范用随包的自然人声（本机运行，不联网）；false 改用 Windows 系统声音。
 voice_practice_natural_voice = true
-# 自然人声的音色编号（0-903）：20 女声偏慢（默认），250 / 100 女声，700 / 400 / 500 男声。
-voice_practice_speaker = 20
+# 自然人声的音色编号（0-903）：180 女声（默认），700 男声；也可以填其他编号。
+voice_practice_speaker = 180
 # 跟读读完后填入什么：false 填入原话（说中文、读英文、发中文）；true 填入译文（说中文、读英文、发英文）。状态条的「跟读 / 发英」两格可直接切换。
 voice_practice_send_translation = false
 voice_practice_shortcut = "right_ctrl+right_alt"
