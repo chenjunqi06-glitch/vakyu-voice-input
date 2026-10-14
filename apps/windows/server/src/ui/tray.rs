@@ -283,10 +283,10 @@ unsafe extern "system" fn wndproc(hwnd: HWND, msg: u32, wparam: WPARAM, lparam: 
         return LRESULT(0);
     }
     // 注销时 detached UI 线程可能来不及执行 Drop，直接在窗口消息里通知 Shell 删除。
-    if msg == WM_DESTROY || (msg == WM_ENDSESSION && wparam.0 != 0) {
-        if let Some(tray) = tray_for(hwnd) {
-            tray.remove();
-        }
+    if (msg == WM_DESTROY || (msg == WM_ENDSESSION && wparam.0 != 0))
+        && let Some(tray) = tray_for(hwnd)
+    {
+        tray.remove();
     }
     if msg == TRAY_MESSAGE || msg == WM_CONTEXTMENU {
         if let Some(tray) = tray_for(hwnd) {
