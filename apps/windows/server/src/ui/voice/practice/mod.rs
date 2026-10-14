@@ -40,7 +40,7 @@ impl VoiceWindow {
         self.events.practice_view.replace(Some(practice.clone()));
         self.cache_frame(
             VoiceFrame::Practice {
-                view: practice.clone(),
+                view: Box::new(practice.clone()),
                 anchor,
             },
             practice.recording,
