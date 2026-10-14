@@ -7,8 +7,9 @@ use std::sync::mpsc;
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::System::Threading::GetCurrentThreadId;
+use windows::Win32::UI::Input::KeyboardAndMouse::GetDoubleClickTime;
 use windows::Win32::UI::WindowsAndMessaging::{
-    CURSORINFO, CallNextHookEx, DispatchMessageW, GetCursorInfo, GetDoubleClickTime, GetMessageW,
+    CURSORINFO, CallNextHookEx, DispatchMessageW, GetCursorInfo, GetMessageW,
     HCURSOR, IDC_IBEAM, LLMHF_INJECTED, LoadCursorW, MSG, MSLLHOOKSTRUCT, PostMessageW,
     PostThreadMessageW, SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx, WH_MOUSE_LL,
     WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_QUIT, WM_RBUTTONDOWN,
