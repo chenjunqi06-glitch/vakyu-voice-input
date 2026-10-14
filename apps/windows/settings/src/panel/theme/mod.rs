@@ -53,8 +53,7 @@ pub(super) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> 
                 GridLength::Pixel(f64::from(HEADER_HEIGHT)),
                 GridLength::STAR,
             ])
-            .children([header::view(context), content])
-            .into(),
+            .children([header::view(context), content]),
     ])
 }
 
