@@ -244,8 +244,7 @@ fn voice_key_control(settings: &Settings, context: &mut ViewContext<Settings>) -
                 Button::new()
                     .is_enabled(!settings.hotkey.recording && !settings.hotkey.saving)
                     .on_click(context.message(Message::VoiceKeyReset))
-                    .content("恢复默认（左 Alt）")
-                    .into(),
+                    .content("恢复默认（左 Alt）"),
             ]),
         feedback(&settings.voice_key_notice),
     ])
