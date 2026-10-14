@@ -179,3 +179,18 @@ fn dictionary_changes_do_not_retry_broken_config() {
     drop(router);
     std::fs::remove_dir_all(&dir).unwrap();
 }
+
+#[cfg(windows)]
+#[test]
+fn voice_reload_detects_speaker_and_natural_voice_changes() {
+    let mut config = Config::default();
+    config.shortcut.voice_practice_speaker = 180;
+    let previous = RouterConfig::from(&config);
+    assert!(!super::voice_settings_changed(&previous, &config));
+    config.shortcut.voice_practice_speaker = 368;
+    assert!(super::voice_settings_changed(&previous, &config));
+    let male = RouterConfig::from(&config);
+    assert!(!super::voice_settings_changed(&male, &config));
+    config.shortcut.voice_practice_natural_voice = !config.shortcut.voice_practice_natural_voice;
+    assert!(super::voice_settings_changed(&male, &config));
+}

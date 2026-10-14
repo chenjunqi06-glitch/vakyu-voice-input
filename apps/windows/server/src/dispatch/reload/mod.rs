@@ -213,30 +213,7 @@ impl Router {
             .set_shuangpin_raw_preedit(config.general.shuangpin_raw_preedit);
         let previous = self.config.render_settings();
         #[cfg(windows)]
-        let voice_changed = (
-            self.config.voice_input,
-            self.config.voice_key,
-            self.config.voice_hold_ms,
-            self.config.voice_english_practice,
-            self.config.voice_practice_learn_english,
-            self.config.voice_practice_send_translation,
-            self.config.voice_practice_demo,
-            self.config.voice_practice_similarity,
-            self.config.voice_practice_name_similarity,
-            self.config.voice_practice_shortcut,
-        ) != (
-            config.shortcut.voice_input,
-            config.shortcut.voice_key,
-            config.shortcut.voice_hold_ms(),
-            config.shortcut.voice_english_practice,
-            config.shortcut.voice_practice_learn_english,
-            config.shortcut.voice_practice_send_translation,
-            config.shortcut.voice_practice_demo,
-            config.shortcut.voice_practice_similarity.min(100),
-            config.shortcut.voice_practice_name_similarity.min(100),
-            // 设置程序在后台不回应时会直接写配置，热加载也要让跟读快捷键生效。
-            config.shortcut.voice_practice_shortcut,
-        );
+        let voice_changed = voice_settings_changed(&self.config, config);
         self.config = RouterConfig::from(config);
         #[cfg(windows)]
         if voice_changed {
@@ -297,4 +274,36 @@ impl Router {
         tracing::info!(count = tables.len(), "辅码码表已重装");
         self.engine.set_aux_codes(tables);
     }
+}
+
+#[cfg(windows)]
+fn voice_settings_changed(previous: &RouterConfig, config: &Config) -> bool {
+    (
+        previous.voice_input,
+        previous.voice_key,
+        previous.voice_hold_ms,
+        previous.voice_english_practice,
+        previous.voice_practice_learn_english,
+        previous.voice_practice_send_translation,
+        previous.voice_practice_demo,
+        previous.voice_practice_natural_voice,
+        previous.voice_practice_speaker,
+        previous.voice_practice_similarity,
+        previous.voice_practice_name_similarity,
+        previous.voice_practice_shortcut,
+    ) != (
+        config.shortcut.voice_input,
+        config.shortcut.voice_key,
+        config.shortcut.voice_hold_ms(),
+        config.shortcut.voice_english_practice,
+        config.shortcut.voice_practice_learn_english,
+        config.shortcut.voice_practice_send_translation,
+        config.shortcut.voice_practice_demo,
+        config.shortcut.voice_practice_natural_voice,
+        config.shortcut.voice_practice_speaker,
+        config.shortcut.voice_practice_similarity.min(100),
+        config.shortcut.voice_practice_name_similarity.min(100),
+        // 设置程序在后台不回应时会直接写配置，热加载也要让跟读快捷键生效。
+        config.shortcut.voice_practice_shortcut,
+    )
 }

@@ -143,3 +143,5 @@ Vakyu 提供普通语音输入与口语跟读两个独立入口。普通语音�
 从 Windows「应用和功能」或「已安装的应用」卸载 Vakyu。默认保留个人设置、词库与历史数据，共享的微软运行库也保留。
 
 反馈问题请使用 [GitHub Issues](https://github.com/chenjunqi06-glitch/vakyu-voice-input/issues)，注明 Vakyu 版本、Windows 版本、目标软件及操作步骤。当前是测试版，尚未完成全新 Windows 环境的完整安装与卸载验收；可下载不等于所有电脑或控件均已验证。
+
+切换英语示范的男女音色后，下次示范即使用新音色，无需重启后台。已经开始的朗读保持原音色。
