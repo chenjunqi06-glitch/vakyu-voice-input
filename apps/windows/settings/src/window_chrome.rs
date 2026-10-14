@@ -406,7 +406,7 @@ fn update_region(hwnd: HWND) {
         let _ = unsafe { SetWindowRgn(hwnd, None, true) };
         return;
     }
-    let diameter = ((16 * dpi + 95) / 96) as i32;
+    let diameter = (16 * dpi).div_ceil(96) as i32;
     let region = unsafe { CreateRoundRectRgn(0, 0, width, height, diameter, diameter) };
     if region.is_invalid() {
         REGION.set(None);
