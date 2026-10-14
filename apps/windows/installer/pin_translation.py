@@ -48,11 +48,14 @@ def run(*command):
 
 def pin_packages(sources, work):
     """按嵌入式 Python 3.12 x64 解析依赖；随包已有的 numpy 等不重复打包。"""
-    already = {item["name"].lower().replace("_", "-")
-               for item in json.loads(VOICE_SOURCES.read_text(encoding="utf-8"))["packages"]}
+    voice_packages = json.loads(VOICE_SOURCES.read_text(encoding="utf-8"))["packages"]
+    already = {item["name"].lower().replace("_", "-") for item in voice_packages}
+    # 使用随包已固定的 NumPy wheel，避免重新遍历整份跨平台 NumPy 索引。
+    bundled_numpy = [item["url"] for item in voice_packages if item["name"].lower() == "numpy"]
     wheels = work / "wheels"
     run(sys.executable, "-m", "pip", "download", "--only-binary=:all:", "--platform", "win_amd64",
-        "--python-version", "3.12", "--implementation", "cp", "-d", wheels, *sources["requirements"])
+        "--python-version", "3.12", "--implementation", "cp", "-d", wheels,
+        *sources["requirements"], *bundled_numpy)
     packages = []
     for wheel in sorted(wheels.glob("*.whl")):
         name, version = wheel.name.split("-")[:2]
