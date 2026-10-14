@@ -2,8 +2,8 @@
 
 use std::time::Instant;
 
+use crate::voice::translation::Translator;
 use qingjian_platform::protocol::VoiceUpdate;
-use qingjian_predict::VoicePracticeTranslator;
 
 use crate::dispatch::PracticeAction;
 use crate::voice::global::practice::{Phase, PracticeSession};
@@ -149,11 +149,18 @@ impl Controller {
             return;
         }
         if self.translator.is_none() {
-            match VoicePracticeTranslator::new(&self.config.translation) {
-                Ok(translator) => self.translator = Some(translator),
-                Err(error) => {
-                    tracing::warn!(sequence, ?error, "跟读练习翻译器初始化失败");
-                    self.practice_error(error.user_message().to_owned());
+            match Translator::practice(&self.config.translation) {
+                Ok(translator) => {
+                    tracing::info!(
+                        sequence,
+                        local = translator.is_local(),
+                        "跟读练习翻译器已就绪"
+                    );
+                    self.translator = Some(translator);
+                }
+                Err(message) => {
+                    tracing::warn!(sequence, "跟读练习翻译器初始化失败");
+                    self.practice_error(message);
                     return;
                 }
             }
@@ -169,8 +176,8 @@ impl Controller {
             &text,
             self.config.target_language(),
         ) {
-            tracing::warn!(sequence, ?error, "跟读练习翻译请求提交失败");
-            self.practice_error(error.user_message().to_owned());
+            tracing::warn!(sequence, "跟读练习翻译请求提交失败");
+            self.practice_error(error);
         } else {
             tracing::info!(sequence, "跟读练习翻译请求已提交");
         }
@@ -187,11 +194,7 @@ impl Controller {
             self.practice_error("本次处理超时，原话尚未填入；请按 Esc 取消后重试".to_owned());
             return;
         }
-        if let Some(result) = self
-            .translator
-            .as_mut()
-            .and_then(VoicePracticeTranslator::try_recv)
-        {
+        if let Some(result) = self.translator.as_mut().and_then(Translator::try_recv) {
             let current = self
                 .active
                 .as_ref()
@@ -223,9 +226,9 @@ impl Controller {
                             self.show_practice();
                         }
                     }
-                    Err(error) => {
-                        tracing::warn!(sequence = result.request_id, ?error, "跟读练习翻译失败");
-                        self.practice_error(error.user_message().to_owned());
+                    Err(message) => {
+                        tracing::warn!(sequence = result.request_id, "跟读练习翻译失败");
+                        self.practice_error(message);
                     }
                 }
             }

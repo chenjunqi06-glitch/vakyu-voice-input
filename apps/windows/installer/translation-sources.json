@@ -1,0 +1,30 @@
+{
+  "requirements": [
+    "ctranslate2==4.6.0",
+    "sentencepiece==0.2.0"
+  ],
+  "converter": [
+    "ctranslate2==4.6.0",
+    "sentencepiece==0.2.0",
+    "transformers==4.46.3",
+    "torch==2.5.1",
+    "sacremoses==0.1.1"
+  ],
+  "packages": [],
+  "models": [
+    {
+      "folder": "zh-en",
+      "repo": "Helsinki-NLP/opus-mt-zh-en",
+      "revision": "",
+      "license": "CC-BY-4.0",
+      "upstream": "https://huggingface.co/Helsinki-NLP/opus-mt-zh-en"
+    },
+    {
+      "folder": "en-zh",
+      "repo": "Helsinki-NLP/opus-mt-en-zh",
+      "revision": "",
+      "license": "Apache-2.0",
+      "upstream": "https://huggingface.co/Helsinki-NLP/opus-mt-en-zh"
+    }
+  ]
+}

@@ -180,14 +180,14 @@ foreach ($model in @('hanzhang-zhiwei\hanzhang-zhiwei-small.qjm', 'hanzhang-tong
     if (Test-Path -LiteralPath $source -PathType Leaf) { Copy-RequiredFile $source (Join-Path $Payload "data\models\$model") }
 }
 
-foreach ($required in @('python\python.exe', 'python\pythonw.exe', 'python\python312.dll', 'python\python312.zip', 'python\python312._pth', 'app\main.py', 'models\streaming\encoder.int8.onnx', 'models\streaming\decoder.onnx', 'models\streaming\joiner.int8.onnx', 'models\streaming\tokens.txt')) {
+foreach ($required in @('python\python.exe', 'python\pythonw.exe', 'python\python312.dll', 'python\python312.zip', 'python\python312._pth', 'app\main.py', 'app\translate_main.py', 'models\streaming\encoder.int8.onnx', 'models\streaming\decoder.onnx', 'models\streaming\joiner.int8.onnx', 'models\streaming\tokens.txt', 'models\translate\zh-en\model.bin', 'models\translate\en-zh\model.bin')) {
     Require-File (Join-Path $VoiceRuntimeDirectory $required)
 }
 Assert-PeArchitecture (Join-Path $VoiceRuntimeDirectory 'python\python.exe') 0x8664
 foreach ($folder in @('python', 'app', 'models', 'licenses')) {
     Copy-CleanTree (Join-Path $VoiceRuntimeDirectory $folder) (Join-Path $Payload "voice-runtime\$folder")
 }
-foreach ($metadata in @('sources.json', 'models-manifest.json', 'requirements-win64.lock')) {
+foreach ($metadata in @('sources.json', 'models-manifest.json', 'translation-sources.json', 'translation-models.json', 'requirements-win64.lock')) {
     Copy-RequiredFile (Join-Path $VoiceRuntimeDirectory $metadata) (Join-Path $Payload "voice-runtime\$metadata")
 }
 Require-File (Join-Path $NoticesDirectory 'INSTALL-LICENSE.txt')

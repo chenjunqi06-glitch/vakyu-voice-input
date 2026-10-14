@@ -7,8 +7,8 @@ use std::sync::Arc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, SyncSender};
 use std::time::{Duration, Instant};
 
+use crate::voice::translation::Translator;
 use qingjian_platform::protocol::{ScreenRect, VoiceUpdate};
-use qingjian_predict::VoicePracticeTranslator;
 
 use crate::dispatch::VoiceSink;
 use crate::voice::VoiceManager;
@@ -177,7 +177,7 @@ struct Controller {
 
     practice: Option<PracticeSession>,
 
-    translator: Option<VoicePracticeTranslator>,
+    translator: Option<Translator>,
 
     demo: Option<EnglishDemo>,
 

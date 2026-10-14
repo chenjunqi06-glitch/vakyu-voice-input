@@ -152,6 +152,48 @@ def voice_handshake(root, test_home):
             "microphone_opened": False, "clean_environment": True}
 
 
+def translation_handshake(root, test_home):
+    """离线翻译真实跑一句中译英、一句英译中；只检查得到目标语言文字，不评判译文质量。"""
+    runtime = root / "voice-runtime"
+    before = {str(p.relative_to(runtime)): sha256(p) for p in runtime.rglob("*") if p.is_file()}
+    started = time.monotonic()
+    process = subprocess.Popen([
+        str(runtime / "python/pythonw.exe"), "-I", "-B", "-u", "-X", "utf8",
+        str(runtime / "app/translate_main.py"), "--models", str(runtime / "models"),
+    ], cwd=test_home, env=clean_environment(test_home), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, text=True, encoding="utf-8", creationflags=0x08000000)
+    try:
+        requests = [(1, "我今天想去吃饭。", "en"), (2, "I want to eat rice today.", "zh")]
+        for request, text, target in requests:
+            process.stdin.write(json.dumps({"command": "translate", "id": request, "text": text,
+                                            "target": target}, ensure_ascii=False) + "\n")
+        process.stdin.flush()
+        results = {}
+        deadline = time.monotonic() + 120
+        while len(results) < len(requests) and time.monotonic() < deadline:
+            line = process.stdout.readline()
+            assert line, "离线翻译进程提前退出"
+            event = json.loads(line)
+            if event.get("event") == "translation":
+                assert event.get("ok"), event
+                results[event["id"]] = event["text"]
+        assert len(results) == len(requests), "离线翻译未在 120 秒内返回"
+        assert any("a" <= c.lower() <= "z" for c in results[1]), results[1]
+        assert any("\u4e00" <= c <= "\u9fff" for c in results[2]), results[2]
+        seconds = round(time.monotonic() - started, 2)
+        process.stdin.write('{"command":"shutdown"}\n')
+        process.stdin.flush()
+        process.wait(timeout=15)
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait(timeout=10)
+    after = {str(p.relative_to(runtime)): sha256(p) for p in runtime.rglob("*") if p.is_file()}
+    assert before == after, "离线翻译写入了安装目录"
+    return {"seconds_for_two_sentences": seconds, "zh_to_en": "passed", "en_to_zh": "passed",
+            "network": "not_used"}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--payload", required=True, type=Path)
@@ -161,6 +203,7 @@ def main():
     result = check_payload(args.payload.resolve())
     result["defaults"] = server_loader(args.payload.resolve(), args.test_home.resolve())
     result["voice"] = voice_handshake(args.payload.resolve(), args.test_home.resolve())
+    result["translation"] = translation_handshake(args.payload.resolve(), args.test_home.resolve())
     result["limitation"] = "独立目录/空环境验证，不等于全新 Windows 安装/卸载或真实麦克风及各应用验收"
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

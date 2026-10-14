@@ -1,5 +1,5 @@
 //! 划词翻译：在任意软件里用鼠标选中文字后，鼠标旁浮出「译」小图标；点它借用剪贴板读出选区（读完放回原内容），
-//! 交给云端翻译，译文显示在不抢焦点的小窗里，可一键复制。
+//! 交给本机离线模型（或用户选择的云端 API）翻译，译文显示在不抢焦点的小窗里，可一键复制。
 //!
 //! 全部窗口在 UI 线程上；钩子线程（[`hook`]）只投坐标消息。窗口过程只在队列消息（自定义消息、点击、计时器、
 //! 重绘）里借用状态，调 Win32 引发的同步消息一律走默认处理，避免重入借用。
@@ -12,7 +12,7 @@ use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 use qingjian_core::Language;
-use qingjian_predict::{PredictConfig, VoicePracticeTranslator};
+use qingjian_predict::PredictConfig;
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
 use windows::Win32::Graphics::Gdi::InvalidateRect;
 use windows::Win32::System::Threading::GetCurrentProcessId;
@@ -30,6 +30,7 @@ use self::hook::SelectionHook;
 use self::paint::{Fonts, PopupContent, PopupLayout};
 use super::monitor;
 use super::window_class::WindowClass;
+use crate::voice::translation::Translator;
 
 /// 钩子：像是刚选了文字，参数是松开鼠标的屏幕坐标。
 const MSG_CANDIDATE: u32 = WM_APP + 0x61;
@@ -49,6 +50,9 @@ const CAPTURE_LIMIT: Duration = Duration::from_millis(900);
 
 /// 剪贴板序号变化后再等这么久才读，应用可能分几步写入。
 const CAPTURE_SETTLE: Duration = Duration::from_millis(60);
+
+/// 等译文的最长时间：云端自身两分钟上限，本机模型首次加载约几秒。
+const TRANSLATE_LIMIT: Duration = Duration::from_secs(130);
 
 /// 与云端翻译的原文上限一致。
 const MAX_CHARS: usize = 4000;
@@ -93,7 +97,10 @@ struct State {
 
     config: Option<PredictConfig>,
 
-    translator: Option<VoicePracticeTranslator>,
+    translator: Option<Translator>,
+
+    /// 本轮译文开始等待的时间；本机模型第一次加载较慢，超时才提示失败。
+    waiting_since: Option<Instant>,
 
     fonts: Fonts,
 
@@ -148,6 +155,7 @@ impl SelectionTranslate {
                 hook: None,
                 config: None,
                 translator: None,
+                waiting_since: None,
                 fonts: Fonts::new(96),
                 icon_rect: None,
                 popup_rect: None,
@@ -176,14 +184,17 @@ impl SelectionTranslate {
                 tracing::info!("划词翻译：已关闭");
                 return;
             };
-            match VoicePracticeTranslator::new_reading(&config) {
+            match Translator::reading(&config) {
                 Ok(translator) => {
+                    let local = translator.is_local();
                     state.translator = Some(translator);
                     state.hook = SelectionHook::start(state.icon);
-                    tracing::info!(hooked = state.hook.is_some(), "划词翻译：已开启");
+                    tracing::info!(hooked = state.hook.is_some(), local, "划词翻译：已开启");
                 }
-                Err(error) => {
-                    tracing::info!(?error, "划词翻译：云服务未就绪，暂不显示「译」图标");
+                Err(_) => {
+                    tracing::info!(
+                        "划词翻译：本机离线模型不完整且没有 API 密钥，暂不显示「译」图标"
+                    );
                 }
             }
         });
@@ -352,32 +363,40 @@ impl State {
         };
         match translator.request_reading(request, &text) {
             Ok(_) => {
+                self.waiting_since = Some(Instant::now());
                 self.show_popup();
                 unsafe { SetTimer(Some(self.popup), POLL_TIMER, 100, None) };
             }
-            Err(error) => self.fail(error.user_message()),
+            Err(message) => self.fail(&message),
         }
     }
 
     fn on_poll_tick(&mut self) {
-        let Some(result) = self
-            .translator
-            .as_mut()
-            .and_then(VoicePracticeTranslator::try_recv)
-        else {
+        let Some(result) = self.translator.as_mut().and_then(Translator::try_recv) else {
+            if self
+                .waiting_since
+                .is_some_and(|since| since.elapsed() >= TRANSLATE_LIMIT)
+            {
+                self.waiting_since = None;
+                if let Some(translator) = &mut self.translator {
+                    translator.cancel();
+                }
+                self.fail("翻译等待超时，请重试。");
+            }
             return;
         };
         if result.request_id != self.request {
             return;
         }
         let _ = unsafe { KillTimer(Some(self.popup), POLL_TIMER) };
+        self.waiting_since = None;
         match result.result {
             Ok(translation) => {
                 self.content.text = translation;
                 self.content.ready = true;
                 self.show_popup();
             }
-            Err(error) => self.fail(error.user_message()),
+            Err(message) => self.fail(&message),
         }
     }
 
@@ -392,6 +411,7 @@ impl State {
     }
 
     fn fail(&mut self, message: &str) {
+        self.waiting_since = None;
         self.content.title = "Vakyu · 翻译失败".to_owned();
         self.content.text = message.to_owned();
         self.content.failed = true;
@@ -431,6 +451,7 @@ impl State {
     }
 
     fn hide_popup(&mut self) {
+        self.waiting_since = None;
         if self.popup_rect.take().is_some() {
             let _ = unsafe { KillTimer(Some(self.popup), POLL_TIMER) };
             let _ = unsafe { ShowWindow(self.popup, SW_HIDE) };

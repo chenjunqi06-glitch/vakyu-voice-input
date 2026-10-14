@@ -12,11 +12,15 @@ mod meter;
 #[cfg(windows)]
 mod neural;
 #[cfg(windows)]
+mod offline;
+#[cfg(windows)]
 mod sapi;
 #[cfg(windows)]
 mod start;
 #[cfg(any(windows, test))]
 mod transcript;
+#[cfg(windows)]
+pub(crate) mod translation;
 #[cfg(windows)]
 mod worker;
 

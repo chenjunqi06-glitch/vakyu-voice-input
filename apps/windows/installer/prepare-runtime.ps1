@@ -11,6 +11,11 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $sources = Get-Content (Join-Path $PSScriptRoot 'voice-sources.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $models = Get-Content (Join-Path $PSScriptRoot 'voice-models.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$translation = Get-Content (Join-Path $PSScriptRoot 'translation-sources.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$translationModels = @(Get-Content (Join-Path $PSScriptRoot 'translation-models.json') -Raw -Encoding UTF8 | ConvertFrom-Json)
+if (@($translation.packages).Count -eq 0 -or $translationModels.Count -eq 0) {
+    throw "离线翻译组件尚未固定版本：先在能上网的构建机运行 py -3.12 pin_translation.py --cache <与本次相同的缓存目录>，再提交 translation-*.json"
+}
 $output = [IO.Path]::GetFullPath($OutputDirectory)
 $cache = [IO.Path]::GetFullPath($CacheDirectory)
 if (Test-Path -LiteralPath $output) {
@@ -37,7 +42,7 @@ $pythonDir = Join-Path $output 'python'
 [IO.Compression.ZipFile]::ExtractToDirectory($pythonZip, $pythonDir)
 $siteDir = Join-Path $pythonDir 'Lib/site-packages'
 New-Item -ItemType Directory -Path $siteDir -Force | Out-Null
-foreach ($package in $sources.packages) {
+foreach ($package in @($sources.packages) + @($translation.packages)) {
     $filename = [IO.Path]::GetFileName(([Uri]$package.url).AbsolutePath)
     $wheel = Get-VerifiedArchive $package.url $package.sha256 $filename
     [IO.Compression.ZipFile]::ExtractToDirectory($wheel, $siteDir)
@@ -58,6 +63,21 @@ foreach ($model in $models) {
     if ((Get-Item -LiteralPath $path).Length -ne $model.size -or
         (Get-FileHash -LiteralPath $path).Hash -ne $model.sha256) { throw "模型校验失败：$name" }
 }
+# 离线翻译模型由 pin_translation.py 从固定版本的官方权重转换到缓存目录，这里逐个按清单校验后复制。
+$translateCache = Join-Path $cache 'translate-models'
+foreach ($model in $translationModels) {
+    $relative = $model.path -replace '^models/translate/', ''
+    $source = Join-Path $translateCache $relative
+    if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
+        throw "缺少离线翻译模型文件：$relative；请用同一缓存目录重新运行 pin_translation.py"
+    }
+    if ((Get-Item -LiteralPath $source).Length -ne $model.size -or
+        (Get-FileHash -LiteralPath $source).Hash -ne $model.sha256) { throw "离线翻译模型校验失败：$relative" }
+    $target = Join-Path $output $model.path
+    New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
+    Copy-Item -LiteralPath $source -Destination $target
+}
+
 $appDir = Join-Path $output 'app'
 New-Item -ItemType Directory -Path $appDir -Force | Out-Null
 $appSource = Join-Path $PSScriptRoot '../server/voice-runtime'
@@ -68,7 +88,9 @@ Copy-Item (Join-Path $appSource 'README.md') $appDir
 Copy-Item (Join-Path $appSource 'requirements.txt') $appDir
 Copy-Item (Join-Path $PSScriptRoot 'voice-sources.json') (Join-Path $output 'sources.json')
 Copy-Item (Join-Path $PSScriptRoot 'voice-models.json') (Join-Path $output 'models-manifest.json')
-$lock = @($sources.packages | ForEach-Object { "$($_.name)==$($_.version) --hash=sha256:$($_.sha256)" })
+Copy-Item (Join-Path $PSScriptRoot 'translation-sources.json') (Join-Path $output 'translation-sources.json')
+Copy-Item (Join-Path $PSScriptRoot 'translation-models.json') (Join-Path $output 'translation-models.json')
+$lock = @(@($sources.packages) + @($translation.packages) | ForEach-Object { "$($_.name)==$($_.version) --hash=sha256:$($_.sha256)" })
 [IO.File]::WriteAllLines((Join-Path $output 'requirements-win64.lock'), $lock, [Text.Encoding]::ASCII)
 
 # 默认 Windows 音频后端不需要 ASIO，避免额外分发未使用的 Steinberg 组件。
@@ -79,8 +101,17 @@ if (Test-Path -LiteralPath $asio) { Remove-Item -LiteralPath $asio -Force }
 $env:PYTHONDONTWRITEBYTECODE = '1'
 & (Join-Path $pythonDir 'python.exe') -B -c 'import sys; from pathlib import Path; from bpe_vocab import prepare_bpe_vocab; assert prepare_bpe_vocab(Path(sys.argv[1])) is not None' $modelDir
 if ($LASTEXITCODE -ne 0) { throw 'BPE 预生成失败' }
+# 离线翻译原生库必须能在随包 Python 里加载，否则安装后才发现翻译不可用。
+& (Join-Path $pythonDir 'python.exe') -I -B -c 'import ctranslate2, sentencepiece'
+if ($LASTEXITCODE -ne 0) { throw '离线翻译依赖无法在随包 Python 中加载' }
 $licenseDir = Join-Path $output 'licenses'
 New-Item -ItemType Directory -Path $licenseDir -Force | Out-Null
+$notice = @('离线翻译模型来自 Helsinki-NLP OPUS-MT，经 CTranslate2 转换为 int8，未修改模型内容：')
+foreach ($model in $translation.models) {
+    $notice += "- $($model.repo)（$($model.license)，版本 $($model.revision)）：$($model.upstream)"
+}
+$notice += 'Tiedemann, J. & Thottingal, S. (2020). OPUS-MT — Building open translation services for the World. EAMT 2020.'
+[IO.File]::WriteAllLines((Join-Path $licenseDir 'OPUS-MT-NOTICE.txt'), $notice, (New-Object Text.UTF8Encoding $true))
 Copy-Item (Join-Path $pythonDir 'LICENSE.txt') (Join-Path $licenseDir 'Python-LICENSE.txt')
 Get-ChildItem -LiteralPath $siteDir -Directory -Filter '*.dist-info' | ForEach-Object {
     $packageName = $_.Name

@@ -37,3 +37,12 @@ Windows 下必须先导入 NumPy / sherpa-onnx 原生依赖，再创建阻塞读
 分发包仅使用标准 Windows PortAudio 后端，不包含 ASIO 变体。录音模块清除子进程继承的 `SD_ENABLE_ASIO`，避免其他音频软件的环境变量使新安装无法加载音频库；不会修改系统环境设置。
 
 离线验证（不开麦）：`python/python.exe app/main.py --wave test.wav --models models`；默认设备只读检查：`python/python.exe app/main.py --devices`；控制竞态回归：`python/python.exe app/tests.py -v`，包括 `dictation_tests.py` 的混说提示边界、普通口述/跟读隔离、取消隔离和失败回退。真实准确率应另用固定 WAV 做有/无提示对比，并保留纯中文、纯英文及静音回归；合成语音的通过不代表真实用户口音已验收。
+
+## 离线翻译
+
+`translate_main.py` 是独立的离线翻译进程（跟读与划词「译」图标共用），入口 `python/pythonw.exe -I -B -u -X utf8 app/translate_main.py --models models`。模型是 Helsinki-NLP OPUS-MT 的 zh→en（CC-BY-4.0）与 en→zh（Apache-2.0），由 `installer/pin_translation.py` 用 CTranslate2 转成 int8，放在 `models/translate/{zh-en,en-zh}`；运行时依赖 `ctranslate2`、`sentencepiece`。只用 CPU，不联网，不记录原文与译文。
+
+标准输入 JSONL：`{"command":"translate","id":1,"text":"…","target":"en"|"zh"}`、`{"command":"shutdown"}`。标准输出：`ready`，以及 `{"event":"translation","id":1,"ok":true,"text":"…"}`，失败为 `ok:false` 与 `message`。按句切分后批量翻译，保留原文换行；长句按逗号再切。英译中在句首加 `>>cmn_Hans<<` 输出简体。同一时间只处理一条，父进程按 id 丢弃过期结果。空闲 10 分钟自行退出释放内存，父进程下次翻译时重启。与识别进程相同，原生库在主线程导入后才启动读取标准输入的线程。
+
+回归：`python app/translation_tests.py -v`（假模型，不需要 CTranslate2）；发布验证 `verify-distribution.py` 会真实翻译一句中译英、一句英译中。
+
