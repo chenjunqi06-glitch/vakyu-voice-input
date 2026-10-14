@@ -18,7 +18,7 @@ pub(crate) const PAGE_KEYS: [(&str, &str); 3] = [
 ];
 
 /// 自然人声音色：编号来自随包 LibriTTS-R 英语模型，从 904 个声音里试听选定的一女一男。
-pub(crate) const PRACTICE_SPEAKERS: [(&str, u16); 2] = [("女声（默认）", 180), ("男声", 700)];
+pub(crate) const PRACTICE_SPEAKERS: [(&str, u16); 2] = [("女声（默认）", 180), ("男声", 368)];
 
 /// 可当模式键的字母（与 Core `ModeKeys::CANDIDATES` 一致）。
 pub(crate) const MODE_KEYS: [&str; 3] = ["v", "u", "i"];
