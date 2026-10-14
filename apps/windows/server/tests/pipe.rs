@@ -11,7 +11,7 @@ use qingjian_core::Language;
 use qingjian_platform::protocol::{
     ClientMessage, KeyEvent, PROTOCOL_VERSION, ServerMessage, SessionId,
 };
-use qingjian_windows_server::ipc::pipe::serve_pipe;
+use qingjian_windows_server::ipc::pipe::{reserve_pipe, serve_pipe};
 use qingjian_windows_server::ipc::{read_message, write_message};
 use qingjian_windows_server::{AssemblySpec, Router, RouterConfig, assembly};
 
@@ -50,7 +50,7 @@ fn named_pipe_round_trips_the_open_type_loop() {
         .expect("assemble engine from sample data");
         let mut router = Router::new(engine, RouterConfig::default());
         let (work_tx, work_rx) = std::sync::mpsc::channel();
-        let _ = serve_pipe(&server_name, &mut router, work_tx, work_rx);
+        let _ = serve_pipe(&server_name, reserve_pipe(&server_name).expect("reserve test pipe"), &mut router, work_tx, work_rx);
     });
 
     let mut client = connect(&name);
