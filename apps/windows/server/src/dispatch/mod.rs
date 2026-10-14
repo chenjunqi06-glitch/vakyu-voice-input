@@ -102,9 +102,6 @@ pub struct Router {
     /// Temporary push-to-talk voice bubble output.
     voice_sink: Box<dyn VoiceSink>,
 
-    #[cfg(windows)]
-    voice_translation: qingjian_predict::PredictConfig,
-
     /// One push-to-talk recognizer is shared by all TSF sessions.
     voice: VoiceManager,
 
@@ -171,8 +168,6 @@ impl Router {
             candidates: Box::new(NoopSink),
             status: Box::new(NoopStatusSink),
             voice_sink: Box::new(NoopVoiceSink),
-            #[cfg(windows)]
-            voice_translation: qingjian_predict::PredictConfig::default(),
             voice: VoiceManager::default(),
             voice_session: None,
             external_voice: false,

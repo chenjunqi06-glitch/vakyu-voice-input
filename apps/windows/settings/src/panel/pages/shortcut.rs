@@ -93,7 +93,7 @@ pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> 
         ),
         field(
             "启用跟读练习 / Reading practice",
-            "默认关闭，可随时开关。仅使用下方「口语跟读快捷键」：按学习方向录原话，松键后显示译句并示范，随后自动录音跟读。完整读完才填入原话，不会自动发送；Esc 取消。翻译使用「云服务」中的服务，只发送本次文字。普通语音转文字不受此开关影响。",
+            "默认关闭，可随时开关。仅使用下方「口语跟读快捷键」：按学习方向录原话，松键后显示译句并示范，随后自动录音跟读。完整读完才填入，不会自动发送；Esc 取消。译句由随包的离线模型在本机生成，不联网、不需要 API 密钥。普通语音转文字不受此开关影响。",
             ToggleSwitch::new()
                 .is_on(s.voice_english_practice)
                 .on_toggled(context.callback(Message::VoiceEnglishPractice)),
@@ -189,7 +189,7 @@ pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> 
         ),
         field(
             "选中文字浮出「译」图标",
-            "在任意软件里用鼠标选中文字后，鼠标旁出现「译」小图标，点它弹出译文，可一键复制。需要云服务的 API 密钥；会临时借用剪贴板读取选中的文字，读完恢复原来的文字内容。",
+            "在任意软件里用鼠标选中文字后，鼠标旁出现「译」小图标，点它弹出译文，可一键复制。用本机离线模型翻译，不联网、不需要 API 密钥；会临时借用剪贴板读取选中的文字，读完放回原来的内容。",
             ToggleSwitch::new()
                 .is_on(s.translate_selection_icon)
                 .on_toggled(context.callback(Message::TranslateSelectionIcon)),

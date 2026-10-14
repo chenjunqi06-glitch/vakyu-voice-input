@@ -1,6 +1,6 @@
 //! 「云服务」页：本地整句模型开关（`[model]`）、`[predict]` 各项与「测试连接」（后台线程跑）。
 
-use qingjian_predict::{ConnectionTest, PredictConfig, TranslationEngine};
+use qingjian_predict::{ConnectionTest, PredictConfig};
 use windows_reactor::*;
 
 use crate::panel::cloud_status::CloudStatus;
@@ -47,13 +47,6 @@ pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> 
             ToggleSwitch::new()
                 .is_on(settings.config.model.enabled)
                 .on_toggled(context.callback(Message::LocalModel)),
-        ),
-        field(
-            "跟读与划词用云端翻译",
-            "默认关闭：在本机用随包的离线模型翻译，不联网、不花钱。开启后改用下面的接口，句子更自然，但每次翻译按服务商价格计费。本机模型缺失时，填了密钥会自动改用接口。",
-            ToggleSwitch::new()
-                .is_on(p.translation_engine == TranslationEngine::Cloud)
-                .on_toggled(context.callback(Message::CloudTranslation)),
         ),
         field(
             "启用云联想",

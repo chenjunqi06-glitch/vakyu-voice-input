@@ -149,13 +149,9 @@ impl Controller {
             return;
         }
         if self.translator.is_none() {
-            match Translator::practice(&self.config.translation) {
+            match Translator::practice() {
                 Ok(translator) => {
-                    tracing::info!(
-                        sequence,
-                        local = translator.is_local(),
-                        "跟读练习翻译器已就绪"
-                    );
+                    tracing::info!(sequence, "跟读练习离线翻译已就绪");
                     self.translator = Some(translator);
                 }
                 Err(message) => {

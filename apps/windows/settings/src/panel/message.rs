@@ -56,8 +56,6 @@ pub(crate) enum Message {
     CloudBaseUrl(String),
     CloudSlots(Option<f64>),
     CloudSentence(bool),
-    /// 跟读与划词翻译改用云端接口（关闭为本机离线翻译）。
-    CloudTranslation(bool),
     TestConnection,
     CloudTestDone(Result<String, String>),
 

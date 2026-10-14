@@ -5,8 +5,8 @@ pub trait StatusSink: Send {
     /// 配置变化后刷新托盘菜单的勾选状态。
     fn configure_tray(&self, _state: TrayState) {}
 
-    /// 开关划词翻译的「译」图标：`Some` 带上云服务设置。
-    fn configure_selection(&self, _config: Option<qingjian_predict::PredictConfig>) {}
+    /// 开关划词翻译的「译」图标。
+    fn configure_selection(&self, _enabled: bool) {}
 
     fn show_status(&self, view: StatusView);
 

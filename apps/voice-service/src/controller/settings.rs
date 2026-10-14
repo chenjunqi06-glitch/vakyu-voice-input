@@ -25,11 +25,6 @@ pub fn validated_value(key: &str, value: &Value) -> Result<toml_edit::Value, &'s
             .filter(|n| (0..=100).contains(n))
             .map(Into::into)
             .ok_or("Similarity must be 0–100"),
-        "translation_engine" => value
-            .as_str()
-            .filter(|engine| matches!(*engine, "local" | "cloud"))
-            .map(Into::into)
-            .ok_or("Translation engine must be local or cloud"),
         "voice_practice_shortcut" => value
             .as_str()
             .and_then(|s| s.parse::<PracticeShortcut>().ok())
@@ -47,12 +42,6 @@ impl Controller {
             practice: s.voice_english_practice,
             learn_english: s.voice_practice_learn_english,
             send_translation: s.voice_practice_send_translation,
-            translation_engine: self
-                .config
-                .predict
-                .translation_engine
-                .key_string()
-                .to_owned(),
             demo: s.voice_practice_demo,
             shortcut: s.voice_practice_shortcut.key_string(),
             dictation_key: match s.voice_key {
@@ -90,29 +79,11 @@ impl Controller {
                 && (direction_changed
                     || config.shortcut.voice_english_practice
                         != self.config.shortcut.voice_english_practice));
-        let translation_changed = config.predict != self.config.predict;
         if mode_changed && (self.active || self.practice.is_some()) {
             self.requires_new_round = true;
             self.game.cancel();
             self.fail(self.message("学习方向或语音开关已改变；原话保留在窗口，请按 Esc 后重新录音",
                 "Learning direction or voice mode changed; your text is kept here. Press Esc to start again"));
-        } else if translation_changed
-            && self
-                .practice
-                .as_ref()
-                .is_some_and(|session| session.phase == qingjian_practice::Phase::Translating)
-        {
-            self.fail(self.message(
-                "翻译设置已更新，请点“继续补读”使用新设置；原话尚未填入",
-                "Translation settings updated; choose Continue to use them. No text was inserted",
-            ));
-        }
-        if translation_changed {
-            if let Some(translator) = &mut self.translator {
-                translator.cancel();
-            }
-            self.translator = None;
-            self.drop_reader();
         }
         self.config = config;
         if direction_changed {
@@ -123,12 +94,7 @@ impl Controller {
 
     pub(super) fn set(&mut self, key: &str, value: Value) {
         let result = validated_value(key, &value).and_then(|value| {
-            let section = if key == "translation_engine" {
-                "predict"
-            } else {
-                "shortcut"
-            };
-            Config::set_value(&self.config_path, section, key, value)
+            Config::set_value(&self.config_path, "shortcut", key, value)
                 .map_err(|_| "Could not save configuration")
         });
         match result {

@@ -16,11 +16,6 @@ final class VoiceConfigurationTests: XCTestCase {
         XCTAssertEqual(state.title, "Vakyu · 译成中文")
     }
 
-    func testTranslationEngineDefaultsToLocal() {
-        XCTAssertEqual(VoiceConfiguration(["practice": true]).translationEngine, "local")
-        XCTAssertEqual(VoiceConfiguration(["translation_engine": "cloud"]).translationEngine, "cloud")
-    }
-
     func testReadingTargetMatchesServiceRule() {
         XCTAssertEqual(SystemTranslator.readingTarget("今天下午开会"), "en")
         XCTAssertEqual(SystemTranslator.readingTarget("Meeting at 3 pm"), "zh")

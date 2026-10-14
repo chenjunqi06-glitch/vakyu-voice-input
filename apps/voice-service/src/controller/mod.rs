@@ -2,7 +2,6 @@
 
 mod actions;
 mod capture;
-mod reading;
 mod settings;
 mod translation;
 
@@ -15,7 +14,6 @@ use crate::{
 };
 use qingjian_platform::Config;
 use qingjian_practice::{Phase, PracticeSession};
-use qingjian_predict::VoicePracticeTranslator;
 use std::{
     path::PathBuf,
     time::{Duration, Instant},
@@ -31,14 +29,6 @@ pub struct Controller {
     game: PracticeGame,
 
     practice: Option<PracticeSession>,
-
-    translator: Option<VoicePracticeTranslator>,
-
-    /// 划词翻译专用实例，与跟读的翻译器互不取消。
-    reader: Option<VoicePracticeTranslator>,
-
-    /// 正在等译文的划词请求：宿主的 id 与目标语言。
-    reading: Option<(u64, qingjian_core::Language)>,
 
     round: u64,
 
@@ -84,9 +74,6 @@ impl Controller {
             data,
             game,
             practice: None,
-            translator: None,
-            reader: None,
-            reading: None,
             round: 0,
             generation: 0,
             active: false,
@@ -114,7 +101,7 @@ impl Controller {
     }
 
     pub fn poll_interval(&self) -> Duration {
-        if self.ready && !self.active && self.reading.is_none() {
+        if self.ready && !self.active {
             Duration::from_secs(1)
         } else {
             Duration::from_millis(20)
@@ -172,13 +159,7 @@ impl Controller {
             Command::Action { action, index } => self.action(action, index),
             Command::CommitResult { id, ok, message } => self.commit_result(id, ok, message),
             Command::Set { key, value } => self.set(&key, value),
-            Command::Translate { id, text } => self.translate_selection(id, &text),
-            Command::Translated {
-                id,
-                ok,
-                text,
-                fallback,
-            } => self.translated_by_host(id, ok, text, fallback),
+            Command::Translated { id, ok, text } => self.translated_by_host(id, ok, text),
             Command::Reload => self.reload(),
             Command::Shutdown => {
                 self.cancel();
@@ -191,9 +172,6 @@ impl Controller {
     pub fn cancel(&mut self) {
         self.cancel_capture();
         self.emit(Event::CancelSpeech);
-        if let Some(translator) = &mut self.translator {
-            translator.cancel();
-        }
         self.game.cancel();
         self.practice = None;
         self.pending_commit = None;
@@ -229,9 +207,6 @@ impl Controller {
         self.speech_deadline = None;
         self.resume_at = None;
         self.emit(Event::CancelSpeech);
-        if let Some(translator) = &mut self.translator {
-            translator.cancel();
-        }
         if let Some(session) = &mut self.practice {
             session.fail(message.clone());
             self.show_practice();
@@ -297,8 +272,6 @@ impl Controller {
                 "No insertion confirmation; check the field before retrying",
             ));
         }
-        self.translation_tick();
-        self.reading_tick();
         if self.resume_at.is_some_and(|at| now >= at) {
             self.resume_at = None;
             self.start_practice_capture();

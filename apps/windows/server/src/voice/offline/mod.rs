@@ -51,10 +51,7 @@ impl OfflineTranslator {
     pub(crate) fn new(reading: bool) -> Result<Self, String> {
         let root = super::neural::runtime_root()
             .filter(|root| available(root))
-            .ok_or_else(|| {
-                "离线翻译模型没有安装完整，请重新安装 Vakyu 完整安装包；也可以在「云服务」里填写 API 密钥改用云端翻译"
-                    .to_owned()
-            })?;
+            .ok_or_else(|| "离线翻译模型没有安装完整，请重新安装 Vakyu 完整安装包".to_owned())?;
         let (replies, results) = mpsc::channel();
         Ok(Self {
             root,

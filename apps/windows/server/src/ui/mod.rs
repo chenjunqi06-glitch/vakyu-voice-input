@@ -147,8 +147,8 @@ impl StatusSink for UiHandle {
         self.post(UiCommand::TrayConfigure(state));
     }
 
-    fn configure_selection(&self, config: Option<qingjian_predict::PredictConfig>) {
-        self.post(UiCommand::SelectionConfigure(Box::new(config)));
+    fn configure_selection(&self, enabled: bool) {
+        self.post(UiCommand::SelectionConfigure(enabled));
     }
 
     fn open_settings(&self) {
@@ -358,9 +358,9 @@ fn apply(ui: &Ui<'_>, command: UiCommand) {
             }
         }
         UiCommand::Configure(settings) => Painter::configure(painter, &settings),
-        UiCommand::SelectionConfigure(config) => {
+        UiCommand::SelectionConfigure(enabled) => {
             if let Some(selection) = selection {
-                selection.configure(*config);
+                selection.configure(enabled);
             }
         }
     }

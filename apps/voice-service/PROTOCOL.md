@@ -15,9 +15,8 @@
 - `speech_finished`：`id:u64,ok:bool`，TTS 实际结束后确认；即使失败也应回报。
 - `action`：`action:"retry"|"skip"|"accept"|"lookup"|"close_card"|"speak_word"`，lookup 另带 `index:usize`（显示 words 的索引）。
 - `commit_result`：`id:u64,ok:bool,message?:string`。只填入原目标，**不发送**；宿主检查目标身份、可编辑、非密码、安全输入。成功才确认；相同 id 必须幂等。同一轮提交失败或确认超时，显式 action retry 始终复用相同 id、原话，不自动重发；普通口述也支持该重试。失败保留窗口，已成功填入的 id 返回成功即可，不能再插一次。
-- `set`：`key:string,value:JSON scalar`。只支持 shortcut 节白名单：voice_input、voice_english_practice、voice_practice_learn_english、voice_practice_send_translation、voice_practice_demo、translation_engine（写入 predict 节，local / cloud）、voice_practice_shortcut、voice_hold_ms、voice_practice_similarity、voice_practice_name_similarity。快捷键必须宿主注册成功才保存；冲突不发送 set。
-- `translate`：`id:u64,text:string`。划词翻译（系统「服务」菜单交来的选中文字），自动定方向：汉字多译成英文，否则译成中文；结果以 `translation` 事件返回，不影响当前语音轮次，不填入输入框。
-- `translated`：`id:u64,ok:bool,text:string,fallback?:bool`。回应 `translate_request`；ok 时 text 是系统翻译的译文（服务按 Core 规则校验整理），否则是失败原因。`fallback=true` 表示本机没有系统翻译（macOS 14 及以下），服务在填了密钥时改用云端接口，否则显示该原因。
+- `set`：`key:string,value:JSON scalar`。只支持 shortcut 节白名单：voice_input、voice_english_practice、voice_practice_learn_english、voice_practice_send_translation、voice_practice_demo、voice_practice_shortcut、voice_hold_ms、voice_practice_similarity、voice_practice_name_similarity。快捷键必须宿主注册成功才保存；冲突不发送 set。
+- `translated`：`id:u64,ok:bool,text:string`。回应 `translate_request`；ok 时 text 是系统翻译的译文（服务按 Core 规则校验整理），否则是失败原因，本轮显示该原因且不填入。
 - `reload`：立即重读配置；服务另外每秒检测 mtime。
 - `shutdown`：释放 ASR 子进程并退出。
 
@@ -28,7 +27,7 @@
 顶层 `event`，snake_case：
 
 - `ready`：ASR 模型已就绪。
-- `config`：`voice_input,practice,learn_english,send_translation,demo` bool；`translation_engine` 为 `local` / `cloud`；`shortcut,dictation_key` string；`hold_ms,similarity,name_similarity` integer。dictation_key 来自 shortcut.voice_key（alt/left_alt/right_alt）；shortcut 来自 voice_practice_shortcut。仅白名单，不含 API 凭据。
+- `config`：`voice_input,practice,learn_english,send_translation,demo` bool；`shortcut,dictation_key` string；`hold_ms,similarity,name_similarity` integer。dictation_key 来自 shortcut.voice_key（alt/left_alt/right_alt）；shortcut 来自 voice_practice_shortcut。仅白名单，不含 API 凭据。
 - `capture`：`active:bool,generation:u64,language:"en"|"zh",practice_text?:string`。active=true 开麦，false 立即关麦；宿主仅向相同 generation 发送音频。
 - `dictation`：`text:string,recording:bool,level:float`（0–1）。预览原话并更新真实音量动画。
 - `practice`：`view:PracticeView`，完整快照见下。
@@ -37,8 +36,7 @@
 - `commit`：`id:u64,text:string`。跟读完成才产生；内容默认是原话，`send_translation` 开启时是刚读完的译文；收到成功确认后才累积 XP 和 hide。等待结果时暂不受理 retry，避免同时插入；失败回执或 15 秒确认超时后允许显式重试。
 - `hide`：清除本轮浮窗。
 - `error`：`message:string`，可读提示，不能关闭未完成的跟读。
-- `translate_request`：`id:u64,text:string,target:"en"|"zh"`。`translation_engine=local`（默认）时跟读不调用接口，请宿主用系统翻译本轮原话，以 `translated` 回报；id 即轮次，过期回报丢弃。
-- `translation`：`id:u64,ok:bool,text:string,target:"en"|"zh"`。ok 时 text 是译文（保留换行），否则是可读的失败提示。
+- `translate_request`：`id:u64,text:string,target:"en"|"zh"`。跟读不调用任何网络接口，请宿主用系统翻译（macOS Translation 框架，本机）翻译本轮原话，以 `translated` 回报；id 即轮次，过期回报丢弃。
 - `setting_result`：`key:string,ok:bool,message:string`；失败保留原配置，用 key 关联原生设置回执。
 
 PracticeView 字段：`learn_english:bool, pronunciations:[string], original:string, words:[string], matched_words:usize, level_label:string, level_progress:string, recognized:string, feedback:string, actions_enabled:bool, recording:bool, word_card:WordCard|null, status:string`。
@@ -55,8 +53,8 @@ cancel 后旧代次所有事件丢弃；录音和跟读没有总时长截止，�
 
 ## 数据与费用
 
-配置使用现有 TOML Config API，只更新指定键。缺省配置首次创建时使用右 Control + 右 Option；已有配置不覆盖。密钥优先用 TOML 非空 api_key，其次读取同目录 .env 中 api_key_env 指定的变量，再沿用进程环境变量；.env 只读入内存，不修改全局环境或回写 TOML。每秒检测 TOML 和 .env 的修改时间。方向或总开关变化停止旧录音，保留窗口及原话，明确提示按 Esc 再开始。凭据变化重建翻译器；正在翻译的轮次保留原话并允许点 Retry。相似度、延时、快捷键、示范设置变更不打断当前进度。失败阶段 words 为空且 actions_enabled 为 true 时 Retry 表示重新翻译，Skip/Accept 应禁用。
+配置使用现有 TOML Config API，只更新指定键。缺省配置首次创建时使用右 Control + 右 Option；已有配置不覆盖。每秒检测 TOML 的修改时间。服务不使用 API 凭据，也不发网络请求。方向或总开关变化停止旧录音，保留窗口及原话，明确提示按 Esc 再开始。宿主翻译失败时本轮保留原话并允许点 Retry。相似度、延时、快捷键、示范设置变更不打断当前进度。失败阶段 words 为空且 actions_enabled 为 true 时 Retry 表示重新翻译，Skip/Accept 应禁用。
 
 模型已就绪且没有活动轮次时服务阻塞等待命令最多 1 秒；press 会立即唤醒，不额外增加录音延迟。活动轮次和模型准备阶段使用 20 ms 轮询。
 
-学习经验分别保存在 data 下 english-practice-progress.json / chinese-practice-progress.json。不保存音频或句子。普通口述全程本机；仅启用跟读后对原话最终文本发一次现有翻译请求，不调用云联想或云查词。
+学习经验分别保存在 data 下 english-practice-progress.json / chinese-practice-progress.json。不保存音频或句子。普通口述和跟读全程本机：跟读只请宿主用系统翻译原话最终文本，不发任何网络请求，不调用云联想或云查词。

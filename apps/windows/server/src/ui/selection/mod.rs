@@ -1,5 +1,5 @@
 //! 划词翻译：在任意软件里用鼠标选中文字后，鼠标旁浮出「译」小图标；点它借用剪贴板读出选区（读完放回原内容），
-//! 交给本机离线模型（或用户选择的云端 API）翻译，译文显示在不抢焦点的小窗里，可一键复制。
+//! 交给本机离线模型翻译（不联网），译文显示在不抢焦点的小窗里，可一键复制。
 //!
 //! 全部窗口在 UI 线程上；钩子线程（[`hook`]）只投坐标消息。窗口过程只在队列消息（自定义消息、点击、计时器、
 //! 重绘）里借用状态，调 Win32 引发的同步消息一律走默认处理，避免重入借用。
@@ -12,7 +12,6 @@ use std::cell::RefCell;
 use std::time::{Duration, Instant};
 
 use qingjian_core::Language;
-use qingjian_predict::PredictConfig;
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, RECT, WPARAM};
 use windows::Win32::Graphics::Gdi::InvalidateRect;
 use windows::Win32::System::Threading::GetCurrentProcessId;
@@ -51,10 +50,10 @@ const CAPTURE_LIMIT: Duration = Duration::from_millis(900);
 /// 剪贴板序号变化后再等这么久才读，应用可能分几步写入。
 const CAPTURE_SETTLE: Duration = Duration::from_millis(60);
 
-/// 等译文的最长时间：云端自身两分钟上限，本机模型首次加载约几秒。
-const TRANSLATE_LIMIT: Duration = Duration::from_secs(130);
+/// 等译文的最长时间：本机模型首次加载要几秒，长段落翻译也在一分钟内。
+const TRANSLATE_LIMIT: Duration = Duration::from_secs(90);
 
-/// 与云端翻译的原文上限一致。
+/// 单次翻译的原文上限，与离线翻译器一致。
 const MAX_CHARS: usize = 4000;
 
 const CLASS_NAME: PCWSTR = w!("VakyuSelectionTranslate");
@@ -95,7 +94,7 @@ struct State {
 
     hook: Option<SelectionHook>,
 
-    config: Option<PredictConfig>,
+    enabled: bool,
 
     translator: Option<Translator>,
 
@@ -153,7 +152,7 @@ impl SelectionTranslate {
                 icon,
                 popup,
                 hook: None,
-                config: None,
+                enabled: false,
                 translator: None,
                 waiting_since: None,
                 fonts: Fonts::new(96),
@@ -169,33 +168,28 @@ impl SelectionTranslate {
         Ok(Self { icon, popup })
     }
 
-    /// `Some` 时开启（能建出翻译器才装钩子）；`None` 时关闭并收起。配置没变就什么都不做。
-    pub(super) fn configure(&self, config: Option<PredictConfig>) {
+    /// 开启时（离线模型齐全才装钩子）出现「译」图标；关闭时收起。状态没变就什么都不做。
+    pub(super) fn configure(&self, enabled: bool) {
         with_state(|state| {
-            if state.config == config && (config.is_none() || state.translator.is_some()) {
+            if state.enabled == enabled && (!enabled || state.translator.is_some()) {
                 return;
             }
-            state.config = config.clone();
+            state.enabled = enabled;
             state.translator = None;
             state.hook = None;
             state.hide_icon();
             state.hide_popup();
-            let Some(config) = config else {
+            if !enabled {
                 tracing::info!("划词翻译：已关闭");
                 return;
-            };
-            match Translator::reading(&config) {
+            }
+            match Translator::reading() {
                 Ok(translator) => {
-                    let local = translator.is_local();
                     state.translator = Some(translator);
                     state.hook = SelectionHook::start(state.icon);
-                    tracing::info!(hooked = state.hook.is_some(), local, "划词翻译：已开启");
+                    tracing::info!(hooked = state.hook.is_some(), "划词翻译：已开启");
                 }
-                Err(_) => {
-                    tracing::info!(
-                        "划词翻译：本机离线模型不完整且没有 API 密钥，暂不显示「译」图标"
-                    );
-                }
+                Err(_) => tracing::info!("划词翻译：离线翻译模型不完整，暂不显示「译」图标"),
             }
         });
     }

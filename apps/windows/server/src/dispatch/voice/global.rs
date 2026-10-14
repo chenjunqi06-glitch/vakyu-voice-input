@@ -93,7 +93,6 @@ impl Router {
                 word_similarity: self.config.voice_practice_similarity,
                 name_similarity: self.config.voice_practice_name_similarity,
             },
-            translation: self.voice_translation.clone(),
         }
     }
 }

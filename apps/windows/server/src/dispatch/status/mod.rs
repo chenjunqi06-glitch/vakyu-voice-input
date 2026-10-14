@@ -103,14 +103,11 @@ impl Router {
         }
     }
 
-    /// 划词翻译的「译」图标跟着 `[shortcut] translate_selection_icon` 与云服务设置走；UI 线程比较后才重建。
+    /// 划词翻译的「译」图标跟着 `[shortcut] translate_selection_icon` 走；UI 线程状态没变就不重建。
     #[cfg(windows)]
     pub(super) fn configure_selection(&self) {
-        let config = self
-            .config
-            .translate_selection_icon
-            .then(|| self.voice_translation.clone());
-        self.status.configure_selection(config);
+        self.status
+            .configure_selection(self.config.translate_selection_icon);
     }
 
     /// 写回配置文件一个键；没有配置路径（测试）就只改内存。

@@ -280,7 +280,7 @@ IMK 输入法，源码按 `app / host / imk / candidates / menubar / preferences
 
 划词翻译复用同一翻译器：`VoicePracticeTranslator::new_reading` 建独立实例（与跟读互不取消），`request_reading` 按 `reading_target`（汉字多于拉丁字母译成英文，否则译成中文）定方向；阅读提示与 `reading::parse_reply` 保留换行，其余校验与跟读相同。Windows 由 `ui/selection` 的低层鼠标钩子认「I 形光标下拖选或双击」，弹不抢焦点的「译」图标，点击后完整备份剪贴板（全局内存格式）、模拟 Ctrl+C、读到文字后放回；`[shortcut] translate_selection_icon=true` 且能建出翻译器（有 API 密钥）才装钩子。macOS 走系统服务菜单（`VoiceInfo.plist` 的 `NSServices`，`NSMessage=translateSelection`），语音宿主把文字以协议 `translate` 命令交给服务、收 `translation` 事件显示小窗，不碰剪贴板。
 
-`[predict] translation_engine`（`TranslationEngine`，默认 `local`）决定跟读与划词的翻译引擎：`local` 时 Windows 用随包离线模型、macOS 用系统 Translation 框架，`cloud` 才调用接口；本机不可用且能建出云端翻译器（有密钥）时自动退回云端。各引擎的输出都经 `tidy_translation` 用与云端回复相同的规则校验整理（跟读压成一行，划词保留换行）。Windows 离线引擎是 `voice-runtime/app/translate_main.py`（CTranslate2 int8 + Helsinki-NLP OPUS-MT zh-en / en-zh，英译中需 `>>cmn_Hans<<` 目标标记），由 `voice/offline` 全局共享一个子进程，按请求号分发结果，空闲 10 分钟子进程自退、下次请求重启；`voice/translation::Translator` 把云端与离线统一成跟读和「译」图标共用的接口。依赖 wheel 与模型由 `installer/pin_translation.py` 一次性固定（PyPI 哈希、HF 版本、转换产物 SHA256），`prepare-runtime.ps1` 只校验复制。macOS 跟读由服务发 `translate_request`、宿主 `SystemTranslator` 翻译后回 `translated`；语言未下载时提示到系统设置下载，不弹系统下载窗。
+跟读、说中发英与划词翻译只用本机翻译，不调用任何网络接口，没有云端开关或兜底：Windows 用随包离线模型，macOS 用系统 Translation 框架（macOS 15+，13/14 只能普通口述）。各引擎的输出都经 `tidy_translation` 校验整理（跟读压成一行，划词保留换行）。Windows 离线引擎是 `voice-runtime/app/translate_main.py`（CTranslate2 int8 + Helsinki-NLP OPUS-MT zh-en / en-zh，英译中需 `>>cmn_Hans<<` 目标标记），由 `voice/offline` 全局共享一个子进程，按请求号分发结果，空闲 10 分钟子进程自退、下次请求重启；`voice/translation::Translator` 是跟读和「译」图标共用的接口。依赖 wheel 与模型由 `installer/pin_translation.py` 一次性固定（PyPI 哈希、HF 版本、转换产物 SHA256），`prepare-runtime.ps1` 只校验复制。macOS 跟读由服务发 `translate_request`、宿主 `SystemTranslator` 翻译后回 `translated`；语言未下载时提示到系统设置下载，不弹系统下载窗。云联想、整句补全、问字与释义兜底仍走 `[predict]` 接口，默认关闭。
 
 `[shortcut] voice_practice_demo=true` 默认开启示范，但不改变默认关闭的 `voice_english_practice` 总开关或用户已保存的开关值。Windows 快捷键页可单独关闭示范。`voice/global/demo` 的独立 SAPI TTS 工作线程按目标语言选择本机中英文声音，通过代次取消播放；新手/进阶/挑战的语速分别为 -2/-1/0。`Demonstrating` 阶段麦克风保持关闭，播放结束后再等 400 ms 消散尾音，复核原目标和活动代次后才自动开麦；未找到对应语言声音或播放失败时明确显示示范不可用，改为直接跟读，不能直接放行原文。关闭示范时直接进入跟读准备。翻译、示范、录音和取消均沿用原轮次与焦点保护。
 
@@ -444,7 +444,7 @@ Windows 悬浮状态条：`ui/status/logo.rs` 复用完整 `vakyu-logo.png`，�
 
 会话通过 `evaluate_remaining` 从未通过的位置续读，并在 `RecognitionEvidence` 保存最近真正推进时的归一化识别快照与消费边界；同一快照重复、缩短后恢复不会重复给目标词计分，累计识别回改也不撤销已通过位置。中文的汉字、数字与拉丁专名使用同一套识别单元；英文弱读省略预算跨更新和补读累计。`Retry` 保留通过位置并重开录音，`Restart` / `restart_sentence()` 清除进度、词卡、反馈和消费证据但复用译文，不增加翻译请求；录音代次更新后拒绝旧结果。Windows 浮窗显示四个按钮，绘制和命中共用布局；Mac 宿主同步操作协议。进度仅在本轮内存保存，不新增配置、模型或后台任务。
 
-`apps/voice-service` 以 JSON 行协议接原生宿主，复用 `VoicePracticeTranslator` 和共享会话。输入原话最后结果只翻译一次，lookup 不请求云端；取消、TTS、录音重试使用 generation，翻译使用 round，提交有独立 id 与宿主成功确认。确认后才落盘方向独立 XP 和隐藏。配置只通过白名单编辑，`.env` 只把选中环境键读入内存，不修改进程环境；配置/密钥热加载会重建翻译器。协议与字段详见 `apps/voice-service/PROTOCOL.md`。
+`apps/voice-service` 以 JSON 行协议接原生宿主，复用共享会话；翻译交给宿主的系统翻译（`translate_request` / `translated`），服务本身不联网。输入原话最后结果只翻译一次；取消、TTS、录音重试使用 generation，翻译使用 round，提交有独立 id 与宿主成功确认。确认后才落盘方向独立 XP 和隐藏。配置只通过白名单编辑，热加载不建任何网络翻译器。协议与字段详见 `apps/voice-service/PROTOCOL.md`。
 
 Mac 的 `apps/macos/companion` 使用系统 AVAudioEngine/AVSpeechSynthesizer、CGEventTap/Carbon 和 AX；录音与控件接入属于壳，不放匹配逻辑。Swift 采样转16k mono，以 base64 Float32LE 交给 `apps/macos/voice-runtime/external_main.py`，后者复用现有 Python Recognition。录音代次校验在原生、服务、识别线程三处执行；松键排空已排队采样，显式取消可直接废弃。系统安全输入拒绝交付，AX文本/选区变化不覆盖草稿，粘贴仅面向原进程且核对结果。
 

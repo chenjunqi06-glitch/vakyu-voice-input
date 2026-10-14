@@ -117,10 +117,6 @@ impl Router {
         dirs: DataDirs,
     ) {
         let last_mtime = mtime(&config_path);
-        #[cfg(windows)]
-        {
-            self.voice_translation = config.predict.clone();
-        }
         let code_files = dirs.code_snapshot();
         let dictionary_files = dirs.dict_snapshot();
         // Vakyu 尚未部署自己的签名更新源，不能把上游青简版本作为本分支的更新。
@@ -240,13 +236,8 @@ impl Router {
             config.shortcut.voice_practice_name_similarity.min(100),
             // 设置程序在后台不回应时会直接写配置，热加载也要让跟读快捷键生效。
             config.shortcut.voice_practice_shortcut,
-        ) || (config.shortcut.voice_english_practice
-            && self.voice_translation != config.predict);
+        );
         self.config = RouterConfig::from(config);
-        #[cfg(windows)]
-        {
-            self.voice_translation = config.predict.clone();
-        }
         #[cfg(windows)]
         if voice_changed {
             self.configure_global_voice();

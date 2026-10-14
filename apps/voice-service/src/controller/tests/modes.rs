@@ -22,7 +22,6 @@ fn explicit_dictation_never_translates_even_when_practice_and_reverse_direction_
         text: "本机口述".to_owned(),
     });
     assert!(c.practice.is_none());
-    assert!(c.translator.is_none());
     assert_eq!(c.pending_commit.as_ref().unwrap().1, "本机口述");
 }
 

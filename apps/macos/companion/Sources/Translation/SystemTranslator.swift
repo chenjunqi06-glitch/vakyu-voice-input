@@ -10,7 +10,7 @@ final class SystemTranslator {
     struct Failure {
         let message: String
 
-        /// 这台 Mac 没有系统翻译（系统版本太旧或不支持这对语言），可以改用云端接口。
+        /// 这台 Mac 没有系统翻译（系统版本太旧或不支持这对语言），而不是语言还没下载。
         let unavailable: Bool
     }
 
@@ -26,7 +26,7 @@ final class SystemTranslator {
             return
         }
         #endif
-        completion(nil, Failure(message: "系统翻译需要 macOS 15 或更新版本。", unavailable: true))
+        completion(nil, Failure(message: "翻译需要 macOS 15 或更新版本的系统翻译，请升级系统后再用。", unavailable: true))
     }
 
     /// 划词定方向：汉字多于拉丁字母译成英文，否则译成中文（与服务端规则一致）。

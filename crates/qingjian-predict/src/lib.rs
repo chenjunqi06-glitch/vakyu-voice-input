@@ -13,7 +13,6 @@ mod connection;
 mod error;
 mod gloss;
 mod prompt;
-mod translation_engine;
 mod voice_practice;
 mod worker;
 
@@ -22,7 +21,6 @@ pub use config::PredictConfig;
 pub use connection::{ConnectionReport, ConnectionTest};
 pub use error::PredictError;
 pub use gloss::CloudGlossFiller;
-pub use translation_engine::TranslationEngine;
 pub use voice_practice::{
     VoicePracticeError, VoicePracticeTranslation, VoicePracticeTranslator, reading_target,
     tidy_translation,

@@ -1,7 +1,6 @@
-//! 全局语音与可选跟读的配置；凭据仅交给翻译工作线程，不参与日志输出。
+//! 全局语音与可选跟读的配置；跟读翻译只用本机离线模型。
 
 use qingjian_learning::PracticeMatchConfig;
-use qingjian_predict::PredictConfig;
 
 use super::trigger::{TriggerConfig, VoiceMode};
 
@@ -18,8 +17,6 @@ pub(crate) struct VoiceConfig {
     pub practice_demo: bool,
 
     pub practice_match: PracticeMatchConfig,
-
-    pub translation: PredictConfig,
 }
 
 impl VoiceConfig {
@@ -73,7 +70,6 @@ mod tests {
             send_translation: false,
             practice_demo: false,
             practice_match: PracticeMatchConfig::default(),
-            translation: PredictConfig::default(),
         }
     }
 
