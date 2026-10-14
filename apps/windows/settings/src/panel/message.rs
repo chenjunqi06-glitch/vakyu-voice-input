@@ -133,11 +133,17 @@ pub(crate) enum Message {
     // 关于页
     OpenWebsite,
 
+    // 更新处理仍保留，当前关于页没有生成以下五种消息。
     // 关于页：检查更新（`UpdateChecked` 的 `None` = 本地开发版没查）
+    #[allow(dead_code)]
     UpdateCheck(bool),
+    #[allow(dead_code)]
     UpdateChannel(Option<usize>),
+    #[allow(dead_code)]
     CheckUpdateNow,
+    #[allow(dead_code)]
     UpdateChecked(Option<Result<qingjian_update::UpdateState, String>>),
+    #[allow(dead_code)]
     OpenDownload,
     OpenRepository,
 }
