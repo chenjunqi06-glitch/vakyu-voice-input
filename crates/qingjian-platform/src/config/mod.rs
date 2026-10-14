@@ -356,6 +356,9 @@ lookahead = 32
 slots = 2
 # 组句中除了词候选还要不要整句补全（preedit 右侧，Tab 接受）
 sentence = false
+# 跟读与划词翻译用哪种引擎：local 本机离线翻译（默认，不花钱；Windows 用随包模型，macOS 用系统翻译），
+# cloud 用上面的接口（需要密钥，按量计费，句子更自然）。本机不可用且填了密钥时自动改用接口。
+translation_engine = "local"
 
 [status_bar]
 # 桌面上常驻、可拖动的悬浮状态条（Windows）：「中 / 英」格点一下切换模式（开着双拼时还显示方案名）、「，。」格切全角 / 半角标点、齿轮打开设置。

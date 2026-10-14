@@ -5,12 +5,14 @@ mod error;
 mod prompt;
 mod reading;
 mod request;
+mod tidy;
 mod translation;
 mod translator;
 mod worker;
 
 pub use error::VoicePracticeError;
 pub use reading::reading_target;
+pub use tidy::tidy_translation;
 pub use translation::VoicePracticeTranslation;
 pub use translator::VoicePracticeTranslator;
 

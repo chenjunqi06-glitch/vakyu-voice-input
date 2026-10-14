@@ -109,6 +109,11 @@ impl PracticeSession {
         self
     }
 
+    /// 本轮原话；翻译失败后重新翻译、改用其他翻译引擎时使用。
+    pub fn original(&self) -> &str {
+        &self.original
+    }
+
     pub fn sends_translation(&self) -> bool {
         self.send_translation
     }

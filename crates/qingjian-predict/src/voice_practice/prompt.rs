@@ -53,15 +53,7 @@ pub(super) fn parse_reply(content: &str, target: Language) -> Result<String, Voi
         .get(field)
         .and_then(serde_json::Value::as_str)
         .ok_or(VoicePracticeError::InvalidTranslation)?;
-    if translation.chars().count() > MAX_REPLY_CHARS
-        || translation
-            .chars()
-            .any(|c| c.is_control() && !matches!(c, '\r' | '\n' | '\t'))
-        || !valid_target_script(translation, target)
-    {
-        return Err(VoicePracticeError::InvalidTranslation);
-    }
-    Ok(translation.split_whitespace().collect::<Vec<_>>().join(" "))
+    super::tidy::tidy_translation(translation, target, false)
 }
 
 pub(super) fn valid_target_script(translation: &str, target: Language) -> bool {

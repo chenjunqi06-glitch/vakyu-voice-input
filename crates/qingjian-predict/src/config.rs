@@ -1,6 +1,8 @@
 use qingjian_core::PredictionPolicy;
 use serde::{Deserialize, Serialize};
 
+use crate::TranslationEngine;
+
 /// 云联想配置。默认**关闭**，开启后光标附近的文本会发往 `base_url`。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
@@ -42,6 +44,9 @@ pub struct PredictConfig {
     /// 其余 minimal / low / medium / high / xhigh 照传；留空则不发（给不认这个参数的接口）。
     /// DeepSeek V4 这类默认带思考的模型不关会把 token 预算全花在思考上，正文为空。
     pub reasoning_effort: String,
+
+    /// 跟读与划词翻译的引擎；默认本机，`cloud` 才用上面的接口。
+    pub translation_engine: TranslationEngine,
 }
 
 impl Default for PredictConfig {
@@ -61,6 +66,7 @@ impl Default for PredictConfig {
             slots: 2,
             sentence: false,
             reasoning_effort: "none".to_owned(),
+            translation_engine: TranslationEngine::Local,
         }
     }
 }

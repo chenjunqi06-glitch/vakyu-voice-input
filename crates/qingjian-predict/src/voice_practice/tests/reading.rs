@@ -60,3 +60,24 @@ fn reading_request_picks_its_own_target() {
         Language::English
     );
 }
+
+#[test]
+fn offline_output_goes_through_the_same_checks() {
+    use crate::tidy_translation;
+    assert_eq!(
+        tidy_translation("  I want\nrice. ", Language::English, false).unwrap(),
+        "I want rice."
+    );
+    assert_eq!(
+        tidy_translation("第一行。\n\n第二行。", Language::Chinese, true).unwrap(),
+        "第一行。\n\n第二行。"
+    );
+    assert_eq!(
+        tidy_translation("我想吃饭", Language::English, false),
+        Err(VoicePracticeError::InvalidTranslation)
+    );
+    assert_eq!(
+        tidy_translation("Hello", Language::Japanese, true),
+        Err(VoicePracticeError::UnsupportedLanguage)
+    );
+}
