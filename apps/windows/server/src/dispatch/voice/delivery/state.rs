@@ -4,6 +4,7 @@ use qingjian_platform::protocol::SessionId;
 use std::collections::HashMap;
 use std::time::Instant;
 
+#[derive(Default)]
 pub(super) struct State {
     pub clients: HashMap<(u32, u32), (SessionId, Instant)>,
     pub next: u64,
