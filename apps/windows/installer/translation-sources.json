@@ -12,19 +12,44 @@
     "sacremoses==0.1.1",
     "setuptools==80.9.0"
   ],
-  "packages": [],
+  "packages": [
+    {
+      "url": "https://files.pythonhosted.org/packages/ec/4c/0ecd260233290bee4b2facec4d8e755e57d8781d68f276e1248433993c9f/ctranslate2-4.6.0-cp312-cp312-win_amd64.whl",
+      "sha256": "511cdf810a5bf6a2cec735799e5cd47966e63f8f7688fdee1b97fed621abda00",
+      "name": "ctranslate2",
+      "version": "4.6.0"
+    },
+    {
+      "url": "https://files.pythonhosted.org/packages/86/bf/899e81e4cce32febab4fb42bb97dcdf66bc135272882d1987881a4b519e9/pyyaml-6.0.3-cp312-cp312-win_amd64.whl",
+      "sha256": "5fcd34e47f6e0b794d17de1b4ff496c00986e1c83f7ab2fb8fcfe9616ff7477b",
+      "name": "pyyaml",
+      "version": "6.0.3"
+    },
+    {
+      "url": "https://files.pythonhosted.org/packages/c6/97/d159c32642306ee2b70732077632895438867b3b6df282354bd550cf2a67/sentencepiece-0.2.0-cp312-cp312-win_amd64.whl",
+      "sha256": "7a673a72aab81fef5ebe755c6e0cc60087d1f3a4700835d40537183c1703a45f",
+      "name": "sentencepiece",
+      "version": "0.2.0"
+    },
+    {
+      "url": "https://files.pythonhosted.org/packages/a3/dc/17031897dae0efacfea57dfd3a82fdd2a2aeb58e0ff71b77b87e44edc772/setuptools-80.9.0-py3-none-any.whl",
+      "sha256": "062d34222ad13e0cc312a4c02d73f059e86a4acbfbdea8f8f76b28c99f306922",
+      "name": "setuptools",
+      "version": "80.9.0"
+    }
+  ],
   "models": [
     {
       "folder": "zh-en",
       "repo": "Helsinki-NLP/opus-mt-zh-en",
-      "revision": "",
+      "revision": "cf109095479db38d6df799875e34039d4938aaa6",
       "license": "CC-BY-4.0",
       "upstream": "https://huggingface.co/Helsinki-NLP/opus-mt-zh-en"
     },
     {
       "folder": "en-zh",
       "repo": "Helsinki-NLP/opus-mt-en-zh",
-      "revision": "",
+      "revision": "408d9bc410a388e1d9aef112a2daba955b945255",
       "license": "Apache-2.0",
       "upstream": "https://huggingface.co/Helsinki-NLP/opus-mt-en-zh"
     }

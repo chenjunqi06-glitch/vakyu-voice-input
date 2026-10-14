@@ -1,1 +1,52 @@
-[]
+[
+  {
+    "size": 79567635,
+    "sha256": "e4955858cae9542bef37424a9b79720e3db2f32501fe62264c0cd3eac6319777",
+    "path": "models/translate/zh-en/model.bin"
+  },
+  {
+    "size": 1368999,
+    "sha256": "55d071d6c63a2dab993f00e77077eca76573ac6964990e2e80de7462344401fb",
+    "path": "models/translate/zh-en/shared_vocabulary.json"
+  },
+  {
+    "size": 233,
+    "sha256": "72901fbd8abd89fb5cf4a388f26fc681f5c4c58a1e1a88b30b879f107270e7ee",
+    "path": "models/translate/zh-en/config.json"
+  },
+  {
+    "size": 804677,
+    "sha256": "e27a3a1b539f4959ec72ea60e453f49156289f95d4e6000b29332efc45616203",
+    "path": "models/translate/zh-en/source.spm"
+  },
+  {
+    "size": 806530,
+    "sha256": "6a881f4717cd7265f53fea54fd3dc689c767c05338fac7a4590f3088cb2d7855",
+    "path": "models/translate/zh-en/target.spm"
+  },
+  {
+    "size": 79567635,
+    "sha256": "327584c20bb83c7e89d595bcfa30b6ef3771c10816f707e892c4bbb1f808a8fb",
+    "path": "models/translate/en-zh/model.bin"
+  },
+  {
+    "size": 1368888,
+    "sha256": "4821251fdc0a6c9e889837b42427a90cb3240f71aef89681a5a6de525182a634",
+    "path": "models/translate/en-zh/shared_vocabulary.json"
+  },
+  {
+    "size": 233,
+    "sha256": "72901fbd8abd89fb5cf4a388f26fc681f5c4c58a1e1a88b30b879f107270e7ee",
+    "path": "models/translate/en-zh/config.json"
+  },
+  {
+    "size": 806435,
+    "sha256": "5775ddc9e3ff2fae91554da56468ad35ff56edaba870fea74447bc7234bfdaa8",
+    "path": "models/translate/en-zh/source.spm"
+  },
+  {
+    "size": 804600,
+    "sha256": "81dc94efa84e4025ef38d25d5d07429fe41e3eb29d44003f1db6fe98487b0052",
+    "path": "models/translate/en-zh/target.spm"
+  }
+]
