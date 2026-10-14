@@ -45,8 +45,8 @@ impl Registration {
         if acquire {
             register(next_id, shortcut)?;
         }
-        if let Some(path) = path {
-            if let Err(error) = Config::set_value(
+        if let Some(path) = path
+            && let Err(error) = Config::set_value(
                 path,
                 "shortcut",
                 "voice_practice_shortcut",
@@ -56,7 +56,6 @@ impl Registration {
                     unregister(next_id, shortcut);
                 }
                 return Err(format!("快捷键未保存，已保留原设置：{error}"));
-            }
         }
         if self.active && (changed || !active) {
             unregister(self.id, self.shortcut);
