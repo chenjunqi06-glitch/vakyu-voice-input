@@ -12,6 +12,7 @@
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -43,7 +44,9 @@ def fetch_json(url):
 
 def run(*command):
     print("+", " ".join(str(part) for part in command), flush=True)
-    subprocess.run([str(part) for part in command], check=True)
+    # 固定模型时不再执行与本次下载无关的 pip 自更新检查。
+    environment = dict(os.environ, PIP_DISABLE_PIP_VERSION_CHECK="1")
+    subprocess.run([str(part) for part in command], check=True, env=environment)
 
 
 def pin_packages(sources, work):
