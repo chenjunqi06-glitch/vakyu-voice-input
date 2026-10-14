@@ -173,6 +173,12 @@ impl Controller {
             Command::CommitResult { id, ok, message } => self.commit_result(id, ok, message),
             Command::Set { key, value } => self.set(&key, value),
             Command::Translate { id, text } => self.translate_selection(id, &text),
+            Command::Translated {
+                id,
+                ok,
+                text,
+                fallback,
+            } => self.translated_by_host(id, ok, text, fallback),
             Command::Reload => self.reload(),
             Command::Shutdown => {
                 self.cancel();

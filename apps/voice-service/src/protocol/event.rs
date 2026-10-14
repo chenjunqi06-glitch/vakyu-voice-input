@@ -12,6 +12,8 @@ pub enum Event {
         practice: bool,
         learn_english: bool,
         send_translation: bool,
+        /// `local` 宿主用系统翻译，`cloud` 由服务调用接口。
+        translation_engine: String,
         demo: bool,
         shortcut: String,
         dictation_key: String,
@@ -48,6 +50,12 @@ pub enum Event {
     Hide,
     Error {
         message: String,
+    },
+    /// 跟读请宿主用系统翻译本轮原话；宿主以 `translated` 命令回报。
+    TranslateRequest {
+        id: u64,
+        text: String,
+        target: String,
     },
     /// 划词翻译结果：`ok` 时 `text` 是译文，否则是可读的失败提示；`target` 为 en / zh。
     Translation {

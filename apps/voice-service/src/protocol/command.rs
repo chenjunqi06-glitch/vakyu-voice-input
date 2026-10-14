@@ -42,6 +42,14 @@ pub enum Command {
         id: u64,
         text: String,
     },
+    /// 回应 `translate_request`：`ok` 时 `text` 是译文，否则是失败原因；`fallback` 表示本机没有系统翻译。
+    Translated {
+        id: u64,
+        ok: bool,
+        text: String,
+        #[serde(default)]
+        fallback: bool,
+    },
     Reload,
     Shutdown,
 }

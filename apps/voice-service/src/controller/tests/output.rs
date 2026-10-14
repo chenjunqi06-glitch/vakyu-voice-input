@@ -63,3 +63,68 @@ fn send_translation_is_an_editable_setting() {
         super::validated_value("voice_practice_send_translation", &serde_json::json!(1)).is_err()
     );
 }
+
+fn local_round(english: bool) -> crate::controller::Controller {
+    let mut c = controller();
+    c.config.shortcut.voice_english_practice = true;
+    c.config.shortcut.voice_practice_learn_english = english;
+    c.config.shortcut.voice_practice_demo = false;
+    c.config.predict.api_key_env = "VAKYU_TEST_UNSET_TRANSLATION_KEY_5521".to_owned();
+    c.active = true;
+    c.round_mode = crate::protocol::Mode::Practice;
+    c.begin_practice("我今天想吃米饭。".to_owned());
+    c
+}
+
+#[test]
+fn local_engine_asks_the_host_and_accepts_its_translation() {
+    let mut c = local_round(true);
+    let effects = c.drain();
+    let round = c.round;
+    assert!(effects.iter().any(|effect| matches!(
+        effect,
+        Effect::Native(Event::TranslateRequest { id, target, .. }) if *id == round && target == "en"
+    )));
+    assert!(c.translator.is_none(), "本机翻译不创建云端翻译器");
+    c.command(Command::Translated {
+        id: round,
+        ok: true,
+        text: "  I want to eat\nrice today. ".to_owned(),
+        fallback: false,
+    });
+    let session = c.practice.as_ref().unwrap();
+    assert_eq!(session.phase, qingjian_practice::Phase::Preparing);
+    assert_eq!(session.recognition_hint(), "I want to eat rice today.");
+}
+
+#[test]
+fn host_failures_fail_the_round_unless_cloud_is_configured() {
+    let mut c = local_round(true);
+    let round = c.round;
+    c.command(Command::Translated {
+        id: round + 1,
+        ok: true,
+        text: "stale".to_owned(),
+        fallback: false,
+    });
+    assert_eq!(
+        c.practice.as_ref().unwrap().phase,
+        qingjian_practice::Phase::Translating
+    );
+    c.command(Command::Translated {
+        id: round,
+        ok: false,
+        text: "请先下载翻译语言".to_owned(),
+        fallback: true,
+    });
+    let session = c.practice.as_ref().unwrap();
+    assert_eq!(session.phase, qingjian_practice::Phase::Failed);
+    assert_eq!(session.view().feedback, "请先下载翻译语言");
+    assert!(c.translator.is_none());
+}
+
+#[test]
+fn translation_engine_is_editable_in_the_predict_section() {
+    assert!(super::validated_value("translation_engine", &serde_json::json!("cloud")).is_ok());
+    assert!(super::validated_value("translation_engine", &serde_json::json!("gpu")).is_err());
+}
