@@ -11,6 +11,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $sources = Get-Content (Join-Path $PSScriptRoot 'voice-sources.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $models = Get-Content (Join-Path $PSScriptRoot 'voice-models.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$speechModels = Get-Content (Join-Path $PSScriptRoot 'speech-models.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $translation = Get-Content (Join-Path $PSScriptRoot 'translation-sources.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $translationModels = @(Get-Content (Join-Path $PSScriptRoot 'translation-models.json') -Raw -Encoding UTF8 | ConvertFrom-Json)
 if (@($translation.packages).Count -eq 0 -or $translationModels.Count -eq 0) {
@@ -77,6 +78,17 @@ foreach ($model in $translationModels) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
     Copy-Item -LiteralPath $source -Destination $target
 }
+# 自然人声（Piper 英语模型）：归档哈希已固定；只取模型和英语音标数据，再按清单校验关键文件。
+$speechArchive = Get-VerifiedArchive $sources.speech_model.url $sources.speech_model.archive_sha256 'speech-en.tar.bz2'
+$speechDir = Join-Path $output 'models/speech/en'
+& (Join-Path $pythonDir 'python.exe') -I -B (Join-Path $PSScriptRoot 'extract_speech.py') $speechArchive $sources.speech_model.archive_root $speechDir
+if ($LASTEXITCODE -ne 0) { throw '自然人声模型解压失败' }
+foreach ($model in $speechModels) {
+    $path = Join-Path $output $model.path
+    if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or
+        (Get-Item -LiteralPath $path).Length -ne $model.size -or
+        (Get-FileHash -LiteralPath $path).Hash -ne $model.sha256) { throw "自然人声模型校验失败：$($model.path)" }
+}
 
 $appDir = Join-Path $output 'app'
 New-Item -ItemType Directory -Path $appDir -Force | Out-Null
@@ -90,6 +102,7 @@ Copy-Item (Join-Path $PSScriptRoot 'voice-sources.json') (Join-Path $output 'sou
 Copy-Item (Join-Path $PSScriptRoot 'voice-models.json') (Join-Path $output 'models-manifest.json')
 Copy-Item (Join-Path $PSScriptRoot 'translation-sources.json') (Join-Path $output 'translation-sources.json')
 Copy-Item (Join-Path $PSScriptRoot 'translation-models.json') (Join-Path $output 'translation-models.json')
+Copy-Item (Join-Path $PSScriptRoot 'speech-models.json') (Join-Path $output 'speech-models.json')
 $lock = @(@($sources.packages) + @($translation.packages) | ForEach-Object { "$($_.name)==$($_.version) --hash=sha256:$($_.sha256)" })
 [IO.File]::WriteAllLines((Join-Path $output 'requirements-win64.lock'), $lock, [Text.Encoding]::ASCII)
 
@@ -104,6 +117,8 @@ if ($LASTEXITCODE -ne 0) { throw 'BPE 预生成失败' }
 # 离线翻译原生库必须能在随包 Python 里加载，否则安装后才发现翻译不可用。
 & (Join-Path $pythonDir 'python.exe') -I -B -c 'import ctranslate2, sentencepiece'
 if ($LASTEXITCODE -ne 0) { throw '离线翻译依赖无法在随包 Python 中加载' }
+& (Join-Path $pythonDir 'python.exe') -I -B -c 'import sherpa_onnx; assert hasattr(sherpa_onnx, "OfflineTts")'
+if ($LASTEXITCODE -ne 0) { throw '随包 sherpa-onnx 不支持语音合成，自然人声不可用' }
 $licenseDir = Join-Path $output 'licenses'
 New-Item -ItemType Directory -Path $licenseDir -Force | Out-Null
 $notice = @('离线翻译模型来自 Helsinki-NLP OPUS-MT，经 CTranslate2 转换为 int8，未修改模型内容：')
@@ -112,6 +127,13 @@ foreach ($model in $translation.models) {
 }
 $notice += 'Tiedemann, J. & Thottingal, S. (2020). OPUS-MT — Building open translation services for the World. EAMT 2020.'
 [IO.File]::WriteAllLines((Join-Path $licenseDir 'OPUS-MT-NOTICE.txt'), $notice, (New-Object Text.UTF8Encoding $true))
+$speechNotice = @(
+    '英语示范的自然人声来自 Piper 语音模型 en_US libritts_r medium（Rhasspy，MIT），经 sherpa-onnx 打包，未修改模型内容：',
+    "- $($sources.speech_model.upstream)",
+    '- 训练数据 LibriTTS-R（CC BY 4.0）：Koizumi, Y. et al. (2023). LibriTTS-R: A Restored Multi-Speaker Text-to-Speech Corpus. Interspeech 2023. http://www.openslr.org/141/',
+    '- 该模型由 Piper en_US lessac medium 微调而来；音标数据来自 espeak-ng（GPL-3.0-or-later），只保留英语词典。'
+)
+[IO.File]::WriteAllLines((Join-Path $licenseDir 'PIPER-VOICE-NOTICE.txt'), $speechNotice, (New-Object Text.UTF8Encoding $true))
 Copy-Item (Join-Path $pythonDir 'LICENSE.txt') (Join-Path $licenseDir 'Python-LICENSE.txt')
 Get-ChildItem -LiteralPath $siteDir -Directory -Filter '*.dist-info' | ForEach-Object {
     $packageName = $_.Name

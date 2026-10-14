@@ -42,7 +42,7 @@ pub(super) fn run(
         return;
     }
     run_initialized(commands, results, &desired);
-    // 所有 SAPI 接口已在 run_initialized 返回前释放。
+    // 所有 SAPI 接口与朗读子进程已在 run_initialized 返回前释放。
     unsafe { CoUninitialize() };
 }
 
@@ -81,17 +81,18 @@ fn run_initialized(
                 text,
                 rate,
                 language,
+                natural,
             }) if current(desired, generation) => {
                 stop(&mut speaker);
                 active = None;
                 if speaker
                     .as_ref()
-                    .is_some_and(|speaker| speaker.language() != language)
+                    .is_some_and(|speaker| !speaker.matches(language, natural))
                 {
                     speaker = None;
                 }
                 if speaker.is_none() {
-                    match Speaker::new(language) {
+                    match Speaker::new(language, natural) {
                         Ok(created) => speaker = Some(created),
                         Err(message) => {
                             if current(desired, generation) {
@@ -105,7 +106,7 @@ fn run_initialized(
                 if !current(desired, generation) {
                     continue;
                 }
-                match speaker.as_ref().expect("已创建播放器").speak(&text, rate) {
+                match speaker.as_mut().expect("已创建播放器").speak(&text, rate) {
                     Ok(stream) => {
                         active = Some((generation, request_id, stream, Instant::now()));
                     }
@@ -130,7 +131,7 @@ fn run_initialized(
         let result = if since.elapsed() >= PLAYBACK_TIMEOUT {
             Err("示范朗读播放超时，已停止播放，可继续跟读".to_owned())
         } else {
-            speaker.as_ref().expect("活动播放器").poll(stream)
+            speaker.as_mut().expect("活动播放器").poll(stream)
         };
         match result {
             Ok(false) => {}
@@ -153,7 +154,7 @@ fn current(desired: &AtomicU64, generation: u64) -> bool {
 
 fn stop(speaker: &mut Option<Speaker>) {
     if speaker
-        .as_ref()
+        .as_mut()
         .is_some_and(|speaker| speaker.purge().is_err())
     {
         *speaker = None;

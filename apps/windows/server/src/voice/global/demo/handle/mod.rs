@@ -19,6 +19,9 @@ pub(in crate::voice::global) struct EnglishDemo {
     generation: u64,
 
     active: Option<(u64, u64)>,
+
+    /// 英语示范的自然人声音色；`None` 用系统声音。由调用方按当前配置在朗读前设置。
+    natural: Option<u16>,
 }
 
 impl EnglishDemo {
@@ -38,7 +41,12 @@ impl EnglishDemo {
             desired,
             generation: 0,
             active: None,
+            natural: None,
         })
+    }
+
+    pub fn set_natural_voice(&mut self, natural: Option<u16>) {
+        self.natural = natural;
     }
 
     /// 速率由学习等级决定；-2 为慢速，0 为系统正常速度。
@@ -87,6 +95,7 @@ impl EnglishDemo {
                 text: text.to_owned(),
                 rate: rate.clamp(-10, 10),
                 language,
+                natural: self.natural,
             })
             .is_err()
         {

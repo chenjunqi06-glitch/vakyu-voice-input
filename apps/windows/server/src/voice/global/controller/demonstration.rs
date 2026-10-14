@@ -34,10 +34,9 @@ impl Controller {
             if self.demo.is_none() {
                 self.demo = Some(EnglishDemo::new()?);
             }
-            self.demo
-                .as_mut()
-                .expect("示范工作线程已创建")
-                .speak_in_language(sequence, english, rate, self.config.target_language())
+            let demo = self.demo.as_mut().expect("示范工作线程已创建");
+            demo.set_natural_voice(self.config.natural_voice);
+            demo.speak_in_language(sequence, english, rate, self.config.target_language())
         })();
         if started.is_err() {
             tracing::warn!(sequence, "跟读示范无法启动，转为直接跟读");

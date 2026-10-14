@@ -17,6 +17,16 @@ pub(crate) const PAGE_KEYS: [(&str, &str); 3] = [
     ("减号等号 - =", "-="),
 ];
 
+/// 自然人声音色预设：编号来自随包 LibriTTS-R 英语模型，挑的是吐字清楚、语速适合跟读的几位。
+pub(crate) const PRACTICE_SPEAKERS: [(&str, u16); 6] = [
+    ("女声 A（偏慢，推荐）", 20),
+    ("女声 B", 250),
+    ("女声 C", 100),
+    ("男声 A", 700),
+    ("男声 B", 400),
+    ("男声 C", 500),
+];
+
 /// 可当模式键的字母（与 Core `ModeKeys::CANDIDATES` 一致）。
 pub(crate) const MODE_KEYS: [&str; 3] = ["v", "u", "i"];
 
@@ -119,10 +129,31 @@ pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> 
         ),
         field(
             "跟读示范朗读",
-            "默认开启。按学习方向在本机慢速读一遍英文或中文，示范结束后自动开启麦克风跟读；关闭后直接开始跟读。需本机安装对应语言的朗读声音。",
+            "默认开启。按学习方向在本机慢速读一遍英文或中文，示范结束后自动开启麦克风跟读；关闭后直接开始跟读。",
             ToggleSwitch::new()
                 .is_on(s.voice_practice_demo)
                 .on_toggled(context.callback(Message::VoicePracticeDemo)),
+        ),
+        field(
+            "示范用自然人声 / Natural voice",
+            "默认开启。英语示范用安装包自带的自然人声，在本机合成，不联网、不花钱；第一次朗读要加载几秒。关闭或组件缺失时用 Windows 系统声音。中文示范仍用系统声音。",
+            ToggleSwitch::new()
+                .is_on(s.voice_practice_natural_voice)
+                .is_enabled(s.voice_practice_demo)
+                .on_toggled(context.callback(Message::VoicePracticeNaturalVoice)),
+        ),
+        field(
+            "自然人声音色",
+            "下次示范生效。也可以在配置文件里把 voice_practice_speaker 改成 0–903 之间的任意编号。",
+            ComboBox::new()
+                .items_source(PRACTICE_SPEAKERS.iter().map(|(label, _)| *label))
+                .selected_index(
+                    PRACTICE_SPEAKERS
+                        .iter()
+                        .position(|(_, speaker)| *speaker == s.voice_practice_speaker),
+                )
+                .is_enabled(s.voice_practice_demo && s.voice_practice_natural_voice)
+                .on_selection_changed(context.callback(Message::VoicePracticeSpeaker)),
         ),
         field(
             "启动灵敏度",

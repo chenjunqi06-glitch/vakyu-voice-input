@@ -13,6 +13,9 @@ pub(super) enum Command {
         rate: i32,
 
         language: Language,
+
+        /// 英语示范用随包自然人声时的音色编号；`None` 用系统声音。
+        natural: Option<u16>,
     },
 
     Cancel,

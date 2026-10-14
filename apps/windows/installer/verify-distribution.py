@@ -194,6 +194,32 @@ def translation_handshake(root, test_home):
             "network": "not_used"}
 
 
+def speech_handshake(root, test_home):
+    """自然人声真实合成一句英语（只合成不播放，不占用扬声器）；检查有声音、时长合理、没写安装目录。"""
+    runtime = root / "voice-runtime"
+    before = {str(p.relative_to(runtime)): sha256(p) for p in runtime.rglob("*") if p.is_file()}
+    script = (
+        "import sys, time; sys.path.insert(0, sys.argv[1]);"
+        "from speech import NaturalVoice; t = time.monotonic();"
+        "v = NaturalVoice(sys.argv[2]); s, r = v.synthesize('Hello, let us practice English together.', 20, 0.8);"
+        "print(len(s), r, v.speakers, round(time.monotonic() - t, 2))"
+    )
+    completed = subprocess.run([
+        str(runtime / "python/python.exe"), "-I", "-B", "-X", "utf8", "-c", script,
+        str(runtime / "app"), str(runtime / "models/speech/en"),
+    ], cwd=test_home, env=clean_environment(test_home), capture_output=True, text=True,
+        encoding="utf-8", timeout=180, creationflags=0x08000000)
+    assert completed.returncode == 0, completed.stderr[-2000:]
+    samples, rate, speakers, seconds = completed.stdout.split()
+    duration = int(samples) / int(rate)
+    assert 1.0 < duration < 10.0, duration
+    assert int(speakers) > 20, speakers
+    after = {str(p.relative_to(runtime)): sha256(p) for p in runtime.rglob("*") if p.is_file()}
+    assert before == after, "自然人声写入了安装目录"
+    return {"audio_seconds": round(duration, 2), "load_and_synthesize_seconds": float(seconds),
+            "speakers": int(speakers), "played": False, "network": "not_used"}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--payload", required=True, type=Path)
@@ -204,6 +230,7 @@ def main():
     result["defaults"] = server_loader(args.payload.resolve(), args.test_home.resolve())
     result["voice"] = voice_handshake(args.payload.resolve(), args.test_home.resolve())
     result["translation"] = translation_handshake(args.payload.resolve(), args.test_home.resolve())
+    result["speech"] = speech_handshake(args.payload.resolve(), args.test_home.resolve())
     result["limitation"] = "独立目录/空环境验证，不等于全新 Windows 安装/卸载或真实麦克风及各应用验收"
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")

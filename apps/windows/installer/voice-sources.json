@@ -48,5 +48,13 @@
     "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-x-asr-480ms-streaming-zipformer-transducer-zh-en-punct-int8-2026-06-05.tar.bz2",
     "name": "X-ASR 480 ms zh/en punct int8 2026-06-05",
     "license": "Apache-2.0"
+  },
+  "speech_model": {
+    "archive_sha256": "10dc268f3e371696d721486123e2705a9fc1faa113491979fde4d88dba1f1b1c",
+    "archive_root": "vits-piper-en_US-libritts_r-medium",
+    "upstream": "https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/libritts_r/medium",
+    "url": "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-en_US-libritts_r-medium.tar.bz2",
+    "name": "Piper en_US libritts_r medium (LibriTTS-R, 904 speakers)",
+    "license": "Piper MIT; LibriTTS-R dataset CC BY 4.0"
   }
 }

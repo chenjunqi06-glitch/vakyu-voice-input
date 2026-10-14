@@ -197,6 +197,16 @@ impl Component for Settings {
             Message::VoicePracticeDemo(on) => {
                 self.save("shortcut", "voice_practice_demo", on);
             }
+            Message::VoicePracticeNaturalVoice(on) => {
+                self.save("shortcut", "voice_practice_natural_voice", on);
+            }
+            Message::VoicePracticeSpeaker(Some(i)) if i < shortcut::PRACTICE_SPEAKERS.len() => {
+                self.save(
+                    "shortcut",
+                    "voice_practice_speaker",
+                    i64::from(shortcut::PRACTICE_SPEAKERS[i].1),
+                );
+            }
             Message::VoicePracticeLearnEnglish(on) => {
                 self.save("shortcut", "voice_practice_learn_english", on);
             }

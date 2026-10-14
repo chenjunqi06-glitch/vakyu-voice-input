@@ -24,6 +24,7 @@ fn channels() -> (
             desired: Arc::new(AtomicU64::new(0)),
             generation: 0,
             active: None,
+            natural: None,
         },
         command_rx,
         result_tx,
@@ -126,4 +127,49 @@ fn short_english_demo_reports_real_playback_completion() {
     assert_eq!(completed.request_id, request_id);
     assert!(completed.result.is_ok(), "{:?}", completed.result);
     assert!(demo.try_recv().is_none());
+}
+
+#[test]
+fn natural_voice_setting_travels_with_each_request() {
+    let (mut demo, commands, _results) = channels();
+    demo.set_natural_voice(Some(20));
+    demo.speak(41, "Hello.", -2).unwrap();
+    assert!(matches!(commands.recv().unwrap(), Command::Cancel));
+    assert!(matches!(
+        commands.recv().unwrap(),
+        Command::Speak {
+            natural: Some(20),
+            ..
+        }
+    ));
+    demo.set_natural_voice(None);
+    demo.speak(42, "Hello.", -2).unwrap();
+    assert!(matches!(commands.recv().unwrap(), Command::Cancel));
+    assert!(matches!(
+        commands.recv().unwrap(),
+        Command::Speak { natural: None, .. }
+    ));
+}
+
+#[test]
+#[ignore = "需要完整安装包的自然人声组件；会从默认扬声器播放一句固定英文，不打开麦克风"]
+fn short_english_demo_plays_with_natural_voice() {
+    let mut demo = EnglishDemo::new().unwrap();
+    demo.set_natural_voice(Some(20));
+    let request_id = 902;
+    demo.speak(request_id, "Hello. Let us practice English.", -2)
+        .unwrap();
+    let deadline = Instant::now() + Duration::from_secs(60);
+    let mut completion = None;
+    while Instant::now() < deadline {
+        if let Some(result) = demo.try_recv() {
+            completion = Some(result);
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(25));
+    }
+    demo.cancel();
+    let completed = completion.expect("自然人声示范在一分钟内未结束");
+    assert_eq!(completed.request_id, request_id);
+    assert!(completed.result.is_ok(), "{:?}", completed.result);
 }

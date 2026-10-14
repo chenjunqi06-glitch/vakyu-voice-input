@@ -2,7 +2,7 @@
 
 安装包面向 Windows 10 22H2（19045）和 Windows 11 **原生 x64** 系统。包含 x64 Server、设置程序、x64 / x86 TSF 输入法组件、自包含 Windows App Runtime、中英流式语音模型、独立 Python、离线词典，以及微软签名的 x64 / x86 Visual C++ 运行库。用户不需要安装 Rust、Python 或开发工具；不支持 32 位 Windows 与 Windows on ARM。
 
-公开包使用 `uiAccess=false`，不安装开发者的自签证书，不修改根证书信任。未签名软件可能显示 Windows 安全提示；向管理员权限窗口输入、系统安全界面以及部分受保护界面的悬浮层存在系统权限限制，不能保证每个控件都接受外部输入。正常语音识别在本机 CPU 上运行，不用显卡。联网翻译需要接收者在设置中配置自己的 API 密钥。
+公开包使用 `uiAccess=false`，不安装开发者的自签证书，不修改根证书信任。未签名软件可能显示 Windows 安全提示；向管理员权限窗口输入、系统安全界面以及部分受保护界面的悬浮层存在系统权限限制，不能保证每个控件都接受外部输入。语音识别、跟读与划词翻译、英语示范的自然人声都在本机 CPU 上运行，不用显卡、不联网。云联想等可选联网功能默认关闭，开启时需要接收者在设置中配置自己的 API 密钥。
 
 当前只支持一台电脑上的**单个交互登录会话**。IPC 尚未按用户与会话隔离，不承诺快速用户切换后多个账号同时运行、多人远程桌面或终端服务器场景。
 
@@ -25,6 +25,8 @@ outputs/vakyu-distribution-input/
 需要 MSVC、Rust x64 / i686 目标与 Inno Setup 7.1.0。不需要在构建机安装产品。
 
 离线翻译组件（CTranslate2 + OPUS-MT）第一次需要在能上网的构建机固定版本：用普通 Python 3.12 运行一次 `py -3.12 apps\windows\installer\pin_translation.py --cache ..\outputs\distribution-download-cache`（路径按实际仓库调整，缓存目录必须与下面 `prepare-runtime.ps1` 相同）。它解析 Windows wheel 的 PyPI 地址与 SHA-256、记录 Hugging Face 模型版本，并把官方权重转换成 int8 放进缓存，再写回 `translation-sources.json` 与 `translation-models.json`；提交这两个文件后，以后的构建只校验、不再转换。两个 JSON 还没固定时 `prepare-runtime.ps1` 会直接报错提示。
+
+英语示范的自然人声模型（Piper en_US libritts_r medium，sherpa-onnx 打包）已在 `voice-sources.json` 的 `speech_model` 固定下载地址和归档 SHA-256，不需要额外的固定步骤；`prepare-runtime.ps1` 用 `extract_speech.py` 只取模型、tokens 和英语音标数据（约 80MB），再按 `speech-models.json` 校验关键文件，并写入 `licenses/PIPER-VOICE-NOTICE.txt`。
 
 先从已锁定的上游归档生成干净语音目录。`voice-sources.json` 固定 Python、wheel 和模型归档的版本、下载来源、SHA-256；`voice-models.json` 再固定展开后模型文件的大小和哈希。`prepare-runtime.ps1` 检查两层哈希，生成只读安装可用的 BPE 数据和来源 / 依赖清单；输出目录必须为空，缓存可复用。
 

@@ -1,4 +1,4 @@
-//! SAPI 音频输出封装；按练习语言选择声音，所有 COM 调用留在专用线程。
+//! Windows 系统声音（SAPI）：按练习语言选择声音，所有 COM 调用留在专用线程；自然人声不可用时的后备。
 
 use qingjian_core::Language;
 use windows::Win32::Media::Speech::{
@@ -11,13 +11,11 @@ use windows::core::{PCWSTR, w};
 
 use crate::voice::event::Event;
 
-pub(super) struct Speaker {
+pub(super) struct SystemVoice {
     voice: ISpVoice,
-
-    language: Language,
 }
 
-impl Speaker {
+impl SystemVoice {
     pub fn new(language: Language) -> Result<Self, String> {
         unsafe {
             let voice: ISpVoice = CoCreateInstance(&SpVoice, None, CLSCTX_INPROC_SERVER)
@@ -31,12 +29,8 @@ impl Speaker {
             voice
                 .SetInterest(interest, interest)
                 .map_err(|_| "无法监听示范朗读结束，可继续跟读".to_owned())?;
-            Ok(Self { voice, language })
+            Ok(Self { voice })
         }
-    }
-
-    pub fn language(&self) -> Language {
-        self.language
     }
 
     pub fn speak(&self, text: &str, rate: i32) -> Result<u32, String> {
@@ -100,7 +94,7 @@ impl Speaker {
     }
 }
 
-impl Drop for Speaker {
+impl Drop for SystemVoice {
     fn drop(&mut self) {
         let _ = self.purge();
     }
@@ -147,7 +141,7 @@ fn language_token(language: Language) -> Result<ISpObjectToken, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::Speaker;
+    use super::SystemVoice;
     use qingjian_core::Language;
     use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx, CoUninitialize};
 
@@ -165,7 +159,7 @@ mod tests {
 
     fn voice_is_available_without_playing(language: Language) {
         unsafe { CoInitializeEx(None, COINIT_MULTITHREADED).ok() }.unwrap();
-        let result = Speaker::new(language);
+        let result = SystemVoice::new(language);
         let created = result.is_ok();
         let error = result.err();
         // 如果创建成功，Result 在提取错误时已释放其播放器，之后才退出 COM。

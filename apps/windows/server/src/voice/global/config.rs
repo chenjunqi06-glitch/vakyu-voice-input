@@ -16,6 +16,9 @@ pub(crate) struct VoiceConfig {
 
     pub practice_demo: bool,
 
+    /// 英语示范用随包自然人声时的音色编号；`None` 用 Windows 系统声音。
+    pub natural_voice: Option<u16>,
+
     pub practice_match: PracticeMatchConfig,
 }
 
@@ -69,6 +72,7 @@ mod tests {
             learn_english,
             send_translation: false,
             practice_demo: false,
+            natural_voice: None,
             practice_match: PracticeMatchConfig::default(),
         }
     }

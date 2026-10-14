@@ -17,6 +17,7 @@ from dictation_tests import DictationContextTests
 from meter_tests import AudioLevelTests, LevelMeterTests
 from worker_tests import MergeAudioTests, RunLoopTests
 from translation_tests import ProtocolTests, SplitTests, TranslatorTests
+from speech_tests import SpeechProtocolTests, SpeechTextTests, SpeechVoiceTests
 import worker
 
 

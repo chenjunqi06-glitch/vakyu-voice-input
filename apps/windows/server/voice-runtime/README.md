@@ -46,3 +46,11 @@ Windows 下必须先导入 NumPy / sherpa-onnx 原生依赖，再创建阻塞读
 
 回归：`python app/translation_tests.py -v`（假模型，不需要 CTranslate2）；发布验证 `verify-distribution.py` 会真实翻译一句中译英、一句英译中。
 
+## 自然人声
+
+`speak_main.py` 是英语示范朗读进程，入口 `python/pythonw.exe -I -B -u -X utf8 app/speak_main.py --models models`。`speech.py` 用 sherpa-onnx 的 `OfflineTts` 运行 Piper 英语模型 en_US libritts_r medium（904 个说话人，模型 MIT、训练数据 LibriTTS-R CC BY 4.0），放在 `models/speech/en/`（`model.onnx`、`tokens.txt`、只留英语词典的 `espeak-ng-data/`），由 `installer/extract_speech.py` 从固定哈希的 sherpa-onnx 归档取出。合成后用 sounddevice 从默认扬声器播放；只用 CPU（最多 2 线程），不联网，不保存音频。
+
+标准输入 JSONL：`{"command":"speak","id":1,"text":"…","speaker":20,"speed":0.8}`、`{"command":"stop"}`、`{"command":"shutdown"}`。标准输出：`ready`；播放完 `{"event":"done","id":1}`；单句失败 `{"event":"error","id":1,"message":"…"}`；模型或声卡组件加载失败 `{"event":"fatal","message":"…"}` 后退出。`stop` 在读线程里立即停声，并取消已收到的所有句子，被停的不回 `done`。id 只增不减。空闲 10 分钟自行退出，父进程下次朗读时重启。Server 等到 `ready` 才开始示范（最多 40 秒），失败时改用 SAPI 系统声音。
+
+在普通 CPU 单线程上合成一句约 3 秒的英语用 0.3 秒左右（RTF≈0.1），常驻内存约 100–200MB。回归：`python app/speech_tests.py -v`（假模型与假播放器）；发布验证 `verify-distribution.py` 会真实合成一句英语（不播放）。
+

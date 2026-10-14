@@ -316,18 +316,17 @@ impl Controller {
                 session.pause_for_pronunciation();
                 resume_recording = true;
             }
-            self.demo
-                .as_mut()
-                .expect("已创建 SAPI 播放线程")
-                .speak_in_language(
-                    request,
+            let demo = self.demo.as_mut().expect("已创建示范播放线程");
+            demo.set_natural_voice(self.config.natural_voice);
+            demo.speak_in_language(
+                request,
+                &word,
+                0,
+                crate::voice::global::practice::lookup::pronunciation_language(
                     &word,
-                    0,
-                    crate::voice::global::practice::lookup::pronunciation_language(
-                        &word,
-                        self.config.learn_english,
-                    ),
-                )
+                    self.config.learn_english,
+                ),
+            )
         })();
         match result {
             Ok(()) => {

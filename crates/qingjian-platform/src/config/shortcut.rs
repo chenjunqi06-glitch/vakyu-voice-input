@@ -35,6 +35,12 @@ pub struct ShortcutConfig {
     /// 英语跟读前先在本机慢速示范朗读；只在跟读练习开启时生效。
     pub voice_practice_demo: bool,
 
+    /// Windows：英语示范用随包的自然人声（本机神经网络语音）；关闭或组件缺失时用系统声音。
+    pub voice_practice_natural_voice: bool,
+
+    /// 自然人声的音色编号（随包英语模型有 904 个说话人，0–903）；超出范围按默认处理。
+    pub voice_practice_speaker: u16,
+
     /// 开启英语跟读时的按住录音键；独立于普通语音的 Alt 设置。
     pub voice_practice_shortcut: PracticeShortcut,
 
@@ -59,12 +65,15 @@ pub struct ShortcutConfig {
     /// 把应用里选中的文字译成学习语言（需要云服务开着）。
     pub translate_selection: KeyCombo,
 
-    /// Windows：在任意软件里选中文字后，鼠标旁浮出「译」小图标，点它弹出译文；需要云服务的 API 密钥。
+    /// Windows：在任意软件里选中文字后，鼠标旁浮出「译」小图标，点它弹出译文；用本机离线模型翻译。
     pub translate_selection_icon: bool,
 
     /// 数字键配这些修饰键：删掉候选（用户词整个删掉，词库词清掉对它的学习）。
     pub delete_candidate: Modifiers,
 }
+
+/// 自然人声的默认音色：语速偏慢、吐字清楚的女声，适合跟读示范。
+pub const DEFAULT_PRACTICE_SPEAKER: u16 = 20;
 
 impl Default for ShortcutConfig {
     fn default() -> Self {
@@ -81,6 +90,8 @@ impl Default for ShortcutConfig {
             voice_practice_learn_english: true,
             voice_practice_send_translation: false,
             voice_practice_demo: true,
+            voice_practice_natural_voice: true,
+            voice_practice_speaker: DEFAULT_PRACTICE_SPEAKER,
             voice_practice_shortcut: if cfg!(windows) {
                 PracticeShortcut::RIGHT_CTRL_ALT
             } else {
@@ -222,6 +233,23 @@ mod tests {
         assert!(!enabled.translate_selection_icon);
         let restored: ShortcutConfig = toml::from_str(&toml::to_string(&enabled).unwrap()).unwrap();
         assert_eq!(restored, enabled);
+    }
+
+    #[test]
+    fn natural_voice_defaults_on_and_round_trips() {
+        let legacy: ShortcutConfig = toml::from_str("voice_practice_demo = true\n").unwrap();
+        assert!(legacy.voice_practice_natural_voice);
+        assert_eq!(
+            legacy.voice_practice_speaker,
+            super::DEFAULT_PRACTICE_SPEAKER
+        );
+        let system: ShortcutConfig =
+            toml::from_str("voice_practice_natural_voice = false\nvoice_practice_speaker = 700\n")
+                .unwrap();
+        assert!(!system.voice_practice_natural_voice);
+        assert_eq!(system.voice_practice_speaker, 700);
+        let restored: ShortcutConfig = toml::from_str(&toml::to_string(&system).unwrap()).unwrap();
+        assert_eq!(restored, system);
     }
 
     #[test]

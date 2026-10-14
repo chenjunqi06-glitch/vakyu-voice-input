@@ -64,6 +64,8 @@ pub(crate) enum Message {
     VoiceEnglishPractice(bool),
     VoicePracticeLearnEnglish(bool),
     VoicePracticeDemo(bool),
+    VoicePracticeNaturalVoice(bool),
+    VoicePracticeSpeaker(Option<usize>),
     VoicePracticeSendTranslation(bool),
     TranslateSelectionIcon(bool),
     PracticeShortcutRecord,

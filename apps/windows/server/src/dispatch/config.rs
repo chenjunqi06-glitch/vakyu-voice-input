@@ -67,6 +67,12 @@ pub struct RouterConfig {
 
     pub voice_practice_demo: bool,
 
+    /// 示范用随包自然人声（`[shortcut] voice_practice_natural_voice`）。
+    pub voice_practice_natural_voice: bool,
+
+    /// 自然人声的音色编号（`[shortcut] voice_practice_speaker`）。
+    pub voice_practice_speaker: u16,
+
     pub voice_practice_shortcut: PracticeShortcut,
 
     pub voice_practice_similarity: u8,
@@ -154,6 +160,8 @@ impl From<&Config> for RouterConfig {
             voice_practice_learn_english: config.shortcut.voice_practice_learn_english,
             voice_practice_send_translation: config.shortcut.voice_practice_send_translation,
             voice_practice_demo: config.shortcut.voice_practice_demo,
+            voice_practice_natural_voice: config.shortcut.voice_practice_natural_voice,
+            voice_practice_speaker: config.shortcut.voice_practice_speaker,
             voice_practice_shortcut: config.shortcut.voice_practice_shortcut,
             voice_practice_similarity: config.shortcut.voice_practice_similarity.min(100),
             voice_practice_name_similarity: config.shortcut.voice_practice_name_similarity.min(100),
