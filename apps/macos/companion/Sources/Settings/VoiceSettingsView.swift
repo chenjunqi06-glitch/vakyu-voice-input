@@ -36,6 +36,11 @@ struct VoiceSettingsView: View {
                                isOn: toggle("voice_practice_send_translation", \.sendTranslation))
                         Text(practiceFlow)
                             .font(.caption).foregroundStyle(.white.opacity(0.72))
+                        Toggle("跟读与划词用云端 API 翻译", isOn: Binding(
+                            get: { model.configuration.translationEngine == "cloud" },
+                            set: { coordinator.set("translation_engine", value: $0 ? "cloud" : "local") }))
+                        Text("关闭（默认）时用 macOS 系统翻译：完全在本机运行，免费，需要 macOS 15 及以上；第一次使用前在“系统设置 → 通用 → 语言与地区 → 翻译语言”下载中文（简体）和英语。打开后改用“云服务”里的接口，句子更自然，按服务商价格计费。")
+                            .font(.caption).foregroundStyle(.white.opacity(0.65))
                         Toggle("显示快捷浮窗（一键开关跟读 / 发英）", isOn: $quickBarVisible)
                             .onChange(of: quickBarVisible) { _ in
                                 coordinator.quickBar.restore(); coordinator.statusItem.refresh()

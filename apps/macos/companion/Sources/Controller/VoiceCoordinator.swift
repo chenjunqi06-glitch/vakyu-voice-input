@@ -33,6 +33,8 @@ final class VoiceCoordinator {
 
     let translationService = TranslationService()
 
+    let systemTranslator = SystemTranslator()
+
     var translationRequest: UInt64 = 0
 
     var activeGeneration: UInt64?

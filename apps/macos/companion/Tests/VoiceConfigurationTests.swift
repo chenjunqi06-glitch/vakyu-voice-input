@@ -15,4 +15,15 @@ final class VoiceConfigurationTests: XCTestCase {
         state.target = "zh"
         XCTAssertEqual(state.title, "Vakyu · 译成中文")
     }
+
+    func testTranslationEngineDefaultsToLocal() {
+        XCTAssertEqual(VoiceConfiguration(["practice": true]).translationEngine, "local")
+        XCTAssertEqual(VoiceConfiguration(["translation_engine": "cloud"]).translationEngine, "cloud")
+    }
+
+    func testReadingTargetMatchesServiceRule() {
+        XCTAssertEqual(SystemTranslator.readingTarget("今天下午开会"), "en")
+        XCTAssertEqual(SystemTranslator.readingTarget("Meeting at 3 pm"), "zh")
+        XCTAssertEqual(SystemTranslator.readingTarget("我在用 Vakyu 输入法"), "en")
+    }
 }
