@@ -1,14 +1,16 @@
 {
   "requirements": [
     "ctranslate2==4.6.0",
-    "sentencepiece==0.2.0"
+    "sentencepiece==0.2.0",
+    "setuptools==80.9.0"
   ],
   "converter": [
     "ctranslate2==4.6.0",
     "sentencepiece==0.2.0",
     "transformers==4.46.3",
     "torch==2.5.1",
-    "sacremoses==0.1.1"
+    "sacremoses==0.1.1",
+    "setuptools==80.9.0"
   ],
   "packages": [],
   "models": [
