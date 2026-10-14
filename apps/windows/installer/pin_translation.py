@@ -76,7 +76,10 @@ def convert_models(sources, cache, work):
     environment = work / "converter"
     venv.EnvBuilder(with_pip=True).create(environment)
     python = environment / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
-    run(python, "-m", "pip", "install", "--upgrade", "pip")
+    # 直接使用 PyPI 官方 wheel，避免 pip 在大量历史版本索引中长时间解析。
+    pip_release = fetch_json("https://pypi.org/pypi/pip/json")
+    pip_wheel = next(item for item in pip_release["urls"] if item["filename"].endswith("-py3-none-any.whl"))
+    run(python, "-m", "pip", "install", "--upgrade", pip_wheel["url"])
     run(python, "-m", "pip", "install", "--extra-index-url", "https://download.pytorch.org/whl/cpu",
         *sources["converter"])
     converter = python.parent / ("ct2-transformers-converter.exe" if sys.platform == "win32"
