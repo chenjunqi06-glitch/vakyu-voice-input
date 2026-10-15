@@ -28,9 +28,11 @@ struct CommitSession {
 
 impl ITfEditSession_Impl for CommitSession_Impl {
     fn DoEditSession(&self, ec: u32) -> Result<()> {
-        self.anchor.queued.set(false);
+        if !self.anchor.submission.begin() {
+            return Ok(());
+        }
         let result = catch_unwind(AssertUnwindSafe(|| {
-            if self.anchor.committed.get() || !self.anchor.focused() {
+            if self.anchor.committed() || !self.anchor.focused() {
                 self.anchor.cancel();
                 return Ok(());
             }
@@ -78,7 +80,7 @@ impl ITfEditSession_Impl for CommitSession_Impl {
                 }
             };
             // 插入接口已经执行，后续光标操作失败也不能重试正文，避免重复插入。
-            self.anchor.committed.set(true);
+            self.anchor.submission.commit();
             super::diagnostic::inserted(&inserted, ec, text.len());
             let moved = if follow_caret {
                 unsafe { inserted.Collapse(ec, TF_ANCHOR_END) }
@@ -94,7 +96,7 @@ impl ITfEditSession_Impl for CommitSession_Impl {
             ));
             Ok(())
         }));
-        match result {
+        let result = match result {
             Ok(Ok(())) => Ok(()),
             Ok(Err(error)) => {
                 self.anchor.cancel();
@@ -106,7 +108,10 @@ impl ITfEditSession_Impl for CommitSession_Impl {
                 log("语音插入回调 panic（已兜住）");
                 Err(Error::from(E_FAIL))
             }
-        }
+        };
+        // 写入和光标恢复均可能重入；直到整个回调结束才允许组句延后的请求重排。
+        self.anchor.submission.finish();
+        result
     }
 }
 
@@ -150,7 +155,7 @@ pub(crate) fn request_voice_commit(
     shared: Rc<Shared>,
     text: String,
 ) -> Result<()> {
-    if anchor.queued.replace(true) || anchor.committed.get() {
+    if !anchor.submission.queue() {
         return Ok(());
     }
     let context = anchor.context.clone();
@@ -166,7 +171,7 @@ pub(crate) fn request_voice_commit(
         TF_ES_READWRITE,
     );
     if result.is_err() {
-        anchor.queued.set(false);
+        anchor.submission.finish();
         anchor.cancel();
     }
     result

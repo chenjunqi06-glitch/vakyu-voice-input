@@ -7,6 +7,8 @@ use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::TextServices::{ITfContext, ITfRange, ITfThreadMgr};
 use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
 
+use super::submission::Submission;
+
 pub(crate) struct VoiceAnchor {
     pub(super) context: ITfContext,
 
@@ -20,9 +22,7 @@ pub(crate) struct VoiceAnchor {
 
     pub(super) cancelled: Cell<bool>,
 
-    pub(super) queued: Cell<bool>,
-
-    pub(super) committed: Cell<bool>,
+    pub(super) submission: Submission,
 
     deadline_ms: Cell<Option<u64>>,
 }
@@ -36,8 +36,7 @@ impl VoiceAnchor {
             range: RefCell::new(None),
             ready: Cell::new(false),
             cancelled: Cell::new(false),
-            queued: Cell::new(false),
-            committed: Cell::new(false),
+            submission: Submission::default(),
             deadline_ms: Cell::new(None),
         })
     }
@@ -66,11 +65,11 @@ impl VoiceAnchor {
     }
 
     pub(crate) fn queued(&self) -> bool {
-        self.queued.get()
+        self.submission.queued()
     }
 
     pub(crate) fn committed(&self) -> bool {
-        self.committed.get()
+        self.submission.committed()
     }
 
     pub(crate) fn cancel(&self) {

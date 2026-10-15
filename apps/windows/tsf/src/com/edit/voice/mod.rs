@@ -4,6 +4,7 @@ mod anchor;
 mod capture;
 mod commit;
 mod diagnostic;
+mod submission;
 
 pub(crate) use self::anchor::VoiceAnchor;
 pub(crate) use self::capture::request_voice_anchor;

@@ -463,3 +463,7 @@ Server 在用户键盘初始化、词库、UI 和语音之前预留首个命名�
 ### Windows 自然人声低延迟
 
 跟读开启、配置生效和按键开始时向示范工作线程发送 Prewarm，控制线程不等待模型加载。speak_main.py 在 ready 前静默合成固定短句，提前初始化推理图。Prewarm 不建立播放轮次、不回报完成、不打开麦克风；播放中不执行预热。自然人声切换音色只修改后续请求 sid，不重启 Python。NaturalVoice 只缓存上一组规范化正文、sid、speed 对应的采样，重听复用；所有缓存只在内存，闲置子进程仍在 10 分钟退出。
+
+### Windows 语音提交重入保护
+
+TSF 语音提交使用 Idle / Queued / Writing / Committed 状态。SetSelection、InsertTextAtSelection 和光标恢复期间始终保持 Writing 门闸；回调结束前不接受同一轮的再次排队或回调。组句延后且尚未写入时才回到 Idle，完成的请求不能重放。保护按请求身份生效，不对正文做去重，保留用户真实重复表达。
