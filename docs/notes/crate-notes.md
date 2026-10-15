@@ -472,3 +472,7 @@ macOS 授权引导由 `PermissionSetupView` 提供：缺权限时排在设置页
 2026-10-11 macOS 语音交付失败使用 `CompletionPresentation` 的 3 秒代次计时器收起面板，保留逻辑会话、原目标及 TextDelivery 未确认写入门禁，不把失败当成功，也不重复投递。菜单可恢复失败结果并主动复制最后 commit 原文（仅内存）。下一次快捷键先发送 cancel，等旧 Hide 回包且实体按键仍按住才开始新一轮；取消期间屏蔽旧 error。收起面板不吞宿主 Esc，重试被拒绝时保留失败操作。成功仍由 commit_result(true) → Hide 关闭。协调器替身回归 73 断言通过，原生 AX/录音兼容性另行验收。
 
 2026-10-12 焦点诊断增加 app bundle ID/PID、system/app 来源与 AX 数字错误码，不记录正文。AXIsProcessTrusted 为 true 而焦点读取返回 apiDisabled/cannotComplete 时，PermissionState 标记可能失效并提供系统设置入口；成功读取清除提示，错误不能转成受限粘贴。签名脚本优先显式固定身份，再选唯一开发/本机证书，无证书时才临时签名并警告；不自动修改证书信任或 TCC。
+
+### macOS 构建 9 与本机翻译合并
+
+本机翻译变更以 fd15868 构建 9 为基础，仅合入系统 Translation 框架、宿主 translated 回执、浮窗与译文投递设置；保留 Delivery、权限、键盘和受限粘贴处理。Shared Rust 服务可在 Windows 测试，Swift Translation 代码需要 Xcode 16/macOS 15 SDK 及 Mac 原生构建和真机验证，不据此生成安装包通过结论。

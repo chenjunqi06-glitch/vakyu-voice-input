@@ -95,7 +95,7 @@ impl Controller {
         if let Some(original) = self
             .practice
             .as_ref()
-            .and_then(|session| session.completed_original())
+            .and_then(|session| session.completed_output())
             .map(str::to_owned)
         {
             self.commit(original);

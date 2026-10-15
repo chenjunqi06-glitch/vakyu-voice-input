@@ -184,10 +184,16 @@ macro_rules! template_shortcut_keys {
 switch_mode = ["shift"]
 # Windows 按住 Alt 说话，松开上屏；false 关闭。短按和 Alt 组合键仍交给应用。
 voice_input = true
-# 英语跟读练习：中文译成英文，读完整句才填入原中文；默认关闭。使用云服务翻译文字，录音仍本地识别。
+# 英语跟读练习：中文译成英文，读完整句才填入原中文；默认关闭。翻译和录音识别都在本机，不联网。
 voice_english_practice = false
 # 跟读前先在本机慢速示范，结束后自动录音；只在英语跟读练习开启时生效。
 voice_practice_demo = true
+# 示范用随包的自然人声（本机运行，不联网）；false 改用 Windows 系统声音。
+voice_practice_natural_voice = true
+# 自然人声的音色编号（0-903）：180 女声（默认），368 男声；也可以填其他编号。
+voice_practice_speaker = 180
+# 跟读读完后填入什么：false 填入原话（说中文、读英文、发中文）；true 填入译文（说中文、读英文、发英文）。状态条的「跟读 / 发英」两格可直接切换。
+voice_practice_send_translation = false
 voice_practice_shortcut = "right_alt"
 # 跟读识别相似度阈值（0-100）：普通词默认 78，新手级生效，进阶/挑战会自动提高。
 voice_practice_similarity = 78
@@ -201,6 +207,8 @@ translation = "ctrl"
 translation_second = "shift+ctrl"
 # 把应用里选中的文字译成学习语言（要开着云服务）：译文先出现在候选窗口，回车替换选中的文字，Esc 保留原文
 translate_selection = "ctrl+alt+t"
+# 在任意软件里选中文字后，鼠标旁浮出「译」小图标，点它弹出译文（本机离线翻译，不联网）；false 关闭小图标。
+translate_selection_icon = true
 # 数字键配这些修饰键删掉候选：用户词（云端选过的、自动造的）整个删掉，词库里的词清掉对它的学习记录。组句中要打感叹号先把词上屏
 delete_candidate = "shift"
 "#

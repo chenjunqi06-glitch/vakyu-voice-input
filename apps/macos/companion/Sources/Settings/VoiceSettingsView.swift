@@ -11,6 +11,18 @@ struct VoiceSettingsView: View {
 
     @AppStorage("voice.chineseIdentifier") private var chineseVoice = ""
 
+    @AppStorage(QuickBarPanel.visibleKey) private var quickBarVisible = true
+
+    private var practiceFlow: String {
+        let config = model.configuration
+        switch (config.learnEnglish, config.sendTranslation) {
+        case (true, false): return "说中文 → 跟读英文 → 填入原中文"
+        case (true, true): return "说中文 → 跟读英文 → 填入英文"
+        case (false, false): return "说英文 → 跟读中文（含拼音）→ 填入原英文"
+        case (false, true): return "说英文 → 跟读中文（含拼音）→ 填入中文"
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
@@ -24,10 +36,16 @@ struct VoiceSettingsView: View {
                             .font(.caption).foregroundStyle(.white.opacity(0.65))
                         Toggle("启用口语跟读快捷键", isOn: toggle("voice_english_practice", \.practice))
                         Toggle("学习英语", isOn: toggle("voice_practice_learn_english", \.learnEnglish))
-                        Text(model.configuration.learnEnglish
-                             ? "说中文 → 跟读英文 → 填入原中文"
-                             : "说英文 → 跟读中文（含拼音）→ 填入原英文")
+                        Toggle(model.configuration.learnEnglish ? "读完发出英文" : "读完发出中文",
+                               isOn: toggle("voice_practice_send_translation", \.sendTranslation))
+                        Text(practiceFlow)
                             .font(.caption).foregroundStyle(.white.opacity(0.72))
+                        Text("跟读和划词翻译使用 macOS 系统翻译（需要 macOS 15 及以上），完全在本机运行，不联网、不花钱。第一次使用前在“系统设置 → 通用 → 语言与地区 → 翻译语言”下载“中文（简体）”和“英语”。")
+                            .font(.caption).foregroundStyle(.white.opacity(0.65))
+                        Toggle("显示快捷浮窗（一键开关跟读 / 发英）", isOn: $quickBarVisible)
+                            .onChange(of: quickBarVisible) { _ in
+                                coordinator.quickBar.restore(); coordinator.statusItem.refresh()
+                            }
                         Toggle("跟读前播放整句示范", isOn: toggle("voice_practice_demo", \.demo))
                         Text("普通语音始终直接填入，不经过跟读。口语跟读使用另一个快捷键，关闭后该快捷键不触发录音。两种方式都不自动发送；Esc 可取消。只有口语跟读为每次原话请求一次翻译。")
                             .font(.caption).foregroundStyle(.white.opacity(0.65))

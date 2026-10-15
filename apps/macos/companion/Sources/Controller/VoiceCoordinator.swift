@@ -29,6 +29,18 @@ final class VoiceCoordinator {
 
     lazy var statusItem = StatusItemController(coordinator: self)
 
+    lazy var quickBar = QuickBarPanel(model: model) { [weak self] sendTranslation in
+        self?.togglePracticeOutput(sendTranslation: sendTranslation)
+    }
+
+    lazy var translationPanel = TranslationPanel()
+
+    let translationService = TranslationService()
+
+    let systemTranslator = SystemTranslator()
+
+    var translationRequest: UInt64 = 0
+
     var activeGeneration: UInt64?
 
     var holdWork: DispatchWorkItem?
@@ -112,6 +124,9 @@ final class VoiceCoordinator {
         }
         refreshPermissions()
         _ = statusItem
+        quickBar.restore()
+        translationService.onText = { [weak self] text in self?.translate(text) }
+        translationService.register()
         do { try connection.launch() }
         catch { serviceFailed(error.localizedDescription) }
         if !model.microphonePermission || !model.accessibilityPermission || !keyboard.available {

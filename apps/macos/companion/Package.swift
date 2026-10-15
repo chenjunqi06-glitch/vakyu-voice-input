@@ -15,7 +15,9 @@ let package = Package(
                 .linkedFramework("SwiftUI"),
                 .linkedFramework("AVFoundation"),
                 .linkedFramework("ApplicationServices"),
-                .linkedFramework("Carbon")
+                .linkedFramework("Carbon"),
+                // 系统翻译只在 macOS 15 起存在；弱链接保证 macOS 13/14 仍能启动，代码里按版本判断。
+                .unsafeFlags(["-Xlinker", "-weak_framework", "-Xlinker", "Translation"])
             ]
         ),
         .testTarget(name: "VakyuVoiceTests", dependencies: ["VakyuVoice"], path: "Tests")

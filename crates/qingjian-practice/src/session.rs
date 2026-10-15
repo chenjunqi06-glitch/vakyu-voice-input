@@ -18,6 +18,9 @@ pub struct PracticeSession {
 
     learn_english: bool,
 
+    /// 读完后填入译文而不是原话（说中文、读英文、发英文）。
+    send_translation: bool,
+
     pronunciations: Vec<String>,
 
     level: PracticeLevel,
@@ -78,6 +81,7 @@ impl PracticeSession {
             translated_text: String::new(),
             matcher: None,
             learn_english,
+            send_translation: false,
             pronunciations: Vec::new(),
             level,
             level_progress,
@@ -93,6 +97,21 @@ impl PracticeSession {
             feedback: String::new(),
             word_card: None,
         }
+    }
+
+    /// 开启后本轮读完交付译文：学英语时说中文、读英文、发英文；学中文时说英文、读中文、发中文。
+    pub fn with_send_translation(mut self, send_translation: bool) -> Self {
+        self.send_translation = send_translation;
+        self
+    }
+
+    /// 本轮原话；翻译失败后重新翻译、改用其他翻译引擎时使用。
+    pub fn original(&self) -> &str {
+        &self.original
+    }
+
+    pub fn sends_translation(&self) -> bool {
+        self.send_translation
     }
 
     pub fn translated(&mut self, english: &str) -> bool {
@@ -406,6 +425,15 @@ impl PracticeSession {
             .then_some(self.original.as_str())
     }
 
+    /// 本轮读完后应填入的文字：默认是原话，开启发送译文时是刚读完的译文；未完成时为空。
+    pub fn completed_output(&self) -> Option<&str> {
+        if !self.send_translation {
+            return self.completed_original();
+        }
+        (self.phase == Phase::Complete && !self.translated_text.trim().is_empty())
+            .then_some(self.translated_text.as_str())
+    }
+
     pub fn fail(&mut self, message: String) {
         self.phase = Phase::Failed;
         self.error = message;
@@ -473,11 +501,21 @@ impl PracticeSession {
                 Phase::Reading if self.demo_unavailable => {
                     "Example voice unavailable · Read aloud · Recording"
                 }
+                Phase::Reading if self.send_translation && self.learn_english => {
+                    "请朗读英文 · 读完填入英文 · 正在录音"
+                }
+                Phase::Reading if self.send_translation => {
+                    "Read the Chinese aloud · Chinese will be inserted · Recording"
+                }
                 Phase::Reading if self.learn_english => "请朗读英文 · 正在录音",
                 Phase::Reading => "Read the Chinese aloud · Recording",
                 Phase::Checking if self.learn_english => "正在结束录音并核对最后几个词",
                 Phase::Checking => "Finishing recording and checking the last words",
                 Phase::Failed => &self.error,
+                Phase::Complete if self.send_translation && self.learn_english => {
+                    "跟读完成 · 填入英文"
+                }
+                Phase::Complete if self.send_translation => "Reading complete · Inserting Chinese",
                 Phase::Complete if self.learn_english => "跟读完成",
                 Phase::Complete => "Reading complete",
             }

@@ -37,6 +37,12 @@ pub enum Command {
         key: String,
         value: serde_json::Value,
     },
+    /// 回应 `translate_request`：`ok` 时 `text` 是译文，否则是失败原因。
+    Translated {
+        id: u64,
+        ok: bool,
+        text: String,
+    },
     Reload,
     Shutdown,
 }

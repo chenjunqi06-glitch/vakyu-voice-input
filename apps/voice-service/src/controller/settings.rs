@@ -11,6 +11,7 @@ pub fn validated_value(key: &str, value: &Value) -> Result<toml_edit::Value, &'s
         | "voice_paste_fallback"
         | "voice_english_practice"
         | "voice_practice_learn_english"
+        | "voice_practice_send_translation"
         | "voice_practice_demo" => value
             .as_bool()
             .map(Into::into)
@@ -42,6 +43,7 @@ impl Controller {
             paste_fallback: s.voice_paste_fallback,
             practice: s.voice_english_practice,
             learn_english: s.voice_practice_learn_english,
+            send_translation: s.voice_practice_send_translation,
             demo: s.voice_practice_demo,
             shortcut: s.voice_practice_shortcut.key_string(),
             dictation_key: match s.voice_key {
@@ -79,28 +81,11 @@ impl Controller {
                 && (direction_changed
                     || config.shortcut.voice_english_practice
                         != self.config.shortcut.voice_english_practice));
-        let translation_changed = config.predict != self.config.predict;
         if mode_changed && (self.active || self.practice.is_some()) {
             self.requires_new_round = true;
             self.game.cancel();
             self.fail(self.message("学习方向或语音开关已改变；原话保留在窗口，请按 Esc 后重新录音",
                 "Learning direction or voice mode changed; your text is kept here. Press Esc to start again"));
-        } else if translation_changed
-            && self
-                .practice
-                .as_ref()
-                .is_some_and(|session| session.phase == qingjian_practice::Phase::Translating)
-        {
-            self.fail(self.message(
-                "翻译设置已更新，请点“再试一次”使用新设置；原话尚未填入",
-                "Translation settings updated; choose Retry to use them. No text was inserted",
-            ));
-        }
-        if translation_changed {
-            if let Some(translator) = &mut self.translator {
-                translator.cancel();
-            }
-            self.translator = None;
         }
         self.config = config;
         if direction_changed {

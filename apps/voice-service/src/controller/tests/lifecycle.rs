@@ -2,8 +2,7 @@
 
 use super::{controller, reading};
 use crate::protocol::{AsrEvent, Command, Effect, Event};
-use qingjian_learning::PracticeLevel;
-use qingjian_practice::{Phase, PracticeAction, PracticeSession};
+use qingjian_practice::PracticeAction;
 use std::time::{Duration, Instant};
 
 #[test]
@@ -56,36 +55,6 @@ fn changing_direction_stops_audio_but_keeps_original_until_escape() {
     assert!(c.pending_commit.is_none());
     c.command(Command::Cancel);
     assert!(c.practice.is_none());
-}
-
-#[test]
-fn credentials_only_interrupt_translation_and_offer_explicit_retry() {
-    let mut c = reading(true);
-    let generation = c.generation;
-    let mut config = c.config.clone();
-    config.predict.api_key = Some("not-a-real-credential".to_owned());
-    c.apply_config(config.clone());
-    assert_eq!(generation, c.generation);
-    assert!(c.capturing);
-    c.practice = Some(PracticeSession::new(
-        "Original text".to_owned(),
-        PracticeLevel::Newcomer,
-        String::new(),
-    ));
-    config.predict.api_key = Some("second-test-credential".to_owned());
-    c.drain();
-    c.apply_config(config);
-    assert_eq!(c.practice.as_ref().unwrap().phase, Phase::Failed);
-    assert!(!c.requires_new_round);
-    let events = c.drain();
-    assert!(
-        !events
-            .iter()
-            .any(|event| matches!(event, Effect::Native(Event::Hide)))
-    );
-    assert!(events.iter().any(
-        |event| matches!(event, Effect::Native(Event::Practice { view }) if view.actions_enabled)
-    ));
 }
 
 #[test]

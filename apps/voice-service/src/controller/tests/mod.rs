@@ -3,6 +3,7 @@
 mod lifecycle;
 mod modes;
 mod paste_fallback;
+mod output;
 
 use super::{Controller, settings::validated_value};
 use crate::protocol::{AsrEvent, Command, Effect, Event};

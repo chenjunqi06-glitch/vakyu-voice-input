@@ -99,6 +99,7 @@ extension VoiceCoordinator {
             if let next, keyboard.heldMode == next { keyPressed(mode: next) }
         case "error": showError(object["message"] as? String ?? "语音服务暂时不可用。")
         case "setting_result": settingResult(object)
+        case "translate_request": translateForService(object)
         default: break
         }
     }

@@ -32,8 +32,17 @@ pub struct ShortcutConfig {
     /// 跟读方向：开启学英语（中→英），关闭学中文（英→中）；独立于练习总开关。
     pub voice_practice_learn_english: bool,
 
+    /// 跟读读完后填入译文而不是原话（说中文、读英文、发英文）；只在跟读练习开启时生效，默认关闭。
+    pub voice_practice_send_translation: bool,
+
     /// 英语跟读前先在本机慢速示范朗读；只在跟读练习开启时生效。
     pub voice_practice_demo: bool,
+
+    /// Windows：英语示范用随包的自然人声（本机神经网络语音）；关闭或组件缺失时用系统声音。
+    pub voice_practice_natural_voice: bool,
+
+    /// 自然人声的音色编号（随包英语模型有 904 个说话人，0–903）；超出范围按默认处理。
+    pub voice_practice_speaker: u16,
 
     /// 开启英语跟读时的按住录音键；独立于普通语音的 Alt 设置。
     pub voice_practice_shortcut: PracticeShortcut,
@@ -59,9 +68,15 @@ pub struct ShortcutConfig {
     /// 把应用里选中的文字译成学习语言（需要云服务开着）。
     pub translate_selection: KeyCombo,
 
+    /// Windows：在任意软件里选中文字后，鼠标旁浮出「译」小图标，点它弹出译文；用本机离线模型翻译。
+    pub translate_selection_icon: bool,
+
     /// 数字键配这些修饰键：删掉候选（用户词整个删掉，词库词清掉对它的学习）。
     pub delete_candidate: Modifiers,
 }
+
+/// 自然人声的默认音色：中等音高、吐字清楚的女声（编号 180，试听后选定）。
+pub const DEFAULT_PRACTICE_SPEAKER: u16 = 180;
 
 impl Default for ShortcutConfig {
     fn default() -> Self {
@@ -77,7 +92,10 @@ impl Default for ShortcutConfig {
             voice_paste_fallback: true,
             voice_english_practice: false,
             voice_practice_learn_english: true,
+            voice_practice_send_translation: false,
             voice_practice_demo: true,
+            voice_practice_natural_voice: true,
+            voice_practice_speaker: DEFAULT_PRACTICE_SPEAKER,
             voice_practice_shortcut: PracticeShortcut::default(),
             voice_practice_similarity: 78,
             voice_practice_name_similarity: 45,
@@ -86,6 +104,7 @@ impl Default for ShortcutConfig {
             translation,
             translation_second,
             translate_selection: KeyCombo::TRANSLATE_DEFAULT,
+            translate_selection_icon: true,
             delete_candidate: Modifiers::SHIFT,
         }
     }
@@ -186,6 +205,39 @@ mod tests {
         assert!(!chinese.voice_practice_learn_english);
         let restored: ShortcutConfig = toml::from_str(&toml::to_string(&chinese).unwrap()).unwrap();
         assert_eq!(chinese, restored);
+    }
+
+    #[test]
+    fn send_translation_defaults_off_and_round_trips() {
+        let legacy: ShortcutConfig = toml::from_str("voice_english_practice = true\n").unwrap();
+        assert!(!legacy.voice_practice_send_translation);
+        assert!(legacy.translate_selection_icon);
+        let enabled: ShortcutConfig = toml::from_str(
+            "voice_practice_send_translation = true\ntranslate_selection_icon = false\n",
+        )
+        .unwrap();
+        assert!(enabled.voice_practice_send_translation);
+        assert!(!enabled.voice_english_practice);
+        assert!(!enabled.translate_selection_icon);
+        let restored: ShortcutConfig = toml::from_str(&toml::to_string(&enabled).unwrap()).unwrap();
+        assert_eq!(restored, enabled);
+    }
+
+    #[test]
+    fn natural_voice_defaults_on_and_round_trips() {
+        let legacy: ShortcutConfig = toml::from_str("voice_practice_demo = true\n").unwrap();
+        assert!(legacy.voice_practice_natural_voice);
+        assert_eq!(
+            legacy.voice_practice_speaker,
+            super::DEFAULT_PRACTICE_SPEAKER
+        );
+        let system: ShortcutConfig =
+            toml::from_str("voice_practice_natural_voice = false\nvoice_practice_speaker = 700\n")
+                .unwrap();
+        assert!(!system.voice_practice_natural_voice);
+        assert_eq!(system.voice_practice_speaker, 700);
+        let restored: ShortcutConfig = toml::from_str(&toml::to_string(&system).unwrap()).unwrap();
+        assert_eq!(restored, system);
     }
 
     #[test]

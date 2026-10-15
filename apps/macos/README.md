@@ -1,6 +1,6 @@
 # Vakyu for macOS（Apple Silicon）
 
-面向 M1 / M2 / M3 / M4 等 Apple 芯片，最低 macOS 13。输入法使用 InputMethodKit；全局语音独立常驻，可在其他输入源下使用。语音、双向跟读、词卡、渐进难度共享现有 Windows 核心。已完成 Apple Silicon 原生编译、自动测试、开发包打包及用户级安装，系统权限和真人应用兼容性仍待验收。实际结果见 `docs/notes/macos-native-validation.md`。
+面向 M1 / M2 / M3 / M4 等 Apple 芯片，最低 macOS 13。输入法使用 InputMethodKit；全局语音独立常驻，可在其他输入源下使用。语音、双向跟读、词卡、渐进难度共享现有 Windows 核心。本分支以构建 9 为基础合入本机翻译新功能。历史原生验证记录见 `docs/notes/macos-native-validation.md`，不能代表本次改动已在 Mac 编译或验收；当前交付为源码预览，尚无新 PKG。系统翻译功能需要 macOS 15+。
 
 ## 功能与使用
 
@@ -9,11 +9,11 @@
 - “启用跟读”默认关闭，开启后跟读键才生效，普通语音键始终直接填入。“学习英语”开＝说中文、读英文、填原中文；关＝说英文、读中文、填原英文。中文配拼音和英文释义。
 - 词语点击可查本地词典和播放系统发音；可重试、跳词、手动放行。点击窗口内外不关闭，Esc 取消；成功填入后自动关闭。
 - 仅填入原输入框，不模拟发送。目标内容或光标变动时保留原稿并提示，不写入其他窗口。
-- 语音识别使用 CPU 两线程；词卡、本机发音不产生 API token。关闭云联想后，仅跟读的一次整句翻译请求使用云服务。
+- 语音识别使用 CPU 两线程；词卡、本机发音不产生 API token。跟读与划词翻译使用 macOS 15+ 系统 Translation 框架，先下载中英翻译语言后离线使用，不配置翻译 API。
 
 ## 在 Apple 芯片 Mac 上构建
 
-需要 Xcode（含 Swift 5.9+ 和 macOS SDK）、Rust 1.96+、Python 3.9+。在仓库根目录执行：
+需要 Xcode 16 或更新版本（含 macOS 15 SDK）、Rust 1.96+、Python 3.9+。在仓库根目录执行：
 
 ```bash
 rustup target add aarch64-apple-darwin

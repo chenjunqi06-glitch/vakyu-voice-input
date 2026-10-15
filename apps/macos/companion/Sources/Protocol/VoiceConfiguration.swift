@@ -10,6 +10,9 @@ struct VoiceConfiguration {
 
     var learnEnglish = true
 
+    /// 跟读读完后填入译文（说中文、读英文、发英文）；关闭时填入原话。
+    var sendTranslation = false
+
     var demo = true
 
     var shortcut = "right_ctrl+right_alt"
@@ -29,6 +32,7 @@ struct VoiceConfiguration {
         pasteFallback = json["paste_fallback"] as? Bool ?? true
         practice = json["practice"] as? Bool ?? false
         learnEnglish = json["learn_english"] as? Bool ?? true
+        sendTranslation = json["send_translation"] as? Bool ?? false
         demo = json["demo"] as? Bool ?? true
         shortcut = json["shortcut"] as? String ?? "right_ctrl+right_alt"
         dictationKey = json["dictation_key"] as? String ?? "left_alt"

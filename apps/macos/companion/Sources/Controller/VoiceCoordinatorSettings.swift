@@ -6,6 +6,18 @@ extension VoiceCoordinator {
         connection.send(["command": "set", "key": key, "value": value])
     }
 
+    /// 快捷浮窗与菜单的「跟读 / 发英」：点亮一项即开启跟读并选定读完填入原话还是译文，再点同一项关闭跟读。
+    func togglePracticeOutput(sendTranslation: Bool) {
+        let config = model.configuration
+        if config.enabled && config.practice && config.sendTranslation == sendTranslation {
+            set("voice_english_practice", value: false)
+            return
+        }
+        if config.sendTranslation != sendTranslation { set("voice_practice_send_translation", value: sendTranslation) }
+        if !config.enabled { set("voice_input", value: true) }
+        if !config.practice { set("voice_english_practice", value: true) }
+    }
+
     func recordShortcut() {
         guard keyboard.start() else {
             model.shortcutMessage = "请先允许辅助功能与输入监控，然后点“刷新权限”。"
