@@ -80,6 +80,11 @@ class NaturalVoice:
         self.engine = engine_factory(root, threads)
         speakers = getattr(self.engine, "num_speakers", 1)
         self.speakers = speakers if isinstance(speakers, int) and speakers > 0 else 1
+        self._cached = None
+
+    def warmup(self):
+        """提前初始化推理图；固定短句仅在内存里合成，不播放。"""
+        self.synthesize("Hello.", 0, 1.0)
 
     def speaker(self, requested):
         if isinstance(requested, int) and 0 <= requested < self.speakers:
@@ -90,9 +95,15 @@ class NaturalVoice:
         text = clean_text(text)
         if not text:
             raise SpeechError("没有可朗读的句子")
-        audio = self.engine.generate(text, sid=self.speaker(speaker), speed=clamp_speed(speed))
+        key = (text, self.speaker(speaker), clamp_speed(speed))
+        if self._cached is not None and self._cached[0] == key:
+            return self._cached[1]
+        audio = self.engine.generate(text, sid=key[1], speed=key[2])
         samples = getattr(audio, "samples", None)
         rate = getattr(audio, "sample_rate", 0)
         if samples is None or len(samples) == 0 or not rate:
             raise SpeechError("自然人声合成失败，可继续跟读")
-        return samples, int(rate)
+        result = (samples, int(rate))
+        # 只留上一句，重听时复用；音色或语速变化都会使缓存失效。
+        self._cached = (key, result)
+        return result

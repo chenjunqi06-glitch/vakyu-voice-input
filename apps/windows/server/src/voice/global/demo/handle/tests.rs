@@ -32,6 +32,24 @@ fn channels() -> (
 }
 
 #[test]
+fn prewarm_does_not_create_a_playback_or_deliver_completion() {
+    let (mut demo, commands, _results) = channels();
+    demo.set_natural_voice(Some(368));
+    demo.prewarm(Language::English);
+    assert!(matches!(
+        commands.recv().unwrap(),
+        Command::Prewarm {
+            generation: 0,
+            language: Language::English,
+            natural: Some(368)
+        }
+    ));
+    assert!(demo.active.is_none());
+    assert!(demo.try_recv().is_none());
+    assert!(commands.try_recv().is_err());
+}
+
+#[test]
 fn demo_selects_each_language_without_reusing_previous_voice() {
     let (mut demo, commands, _results) = channels();
     for (language, text) in [(Language::Chinese, "你好"), (Language::English, "Hello")] {

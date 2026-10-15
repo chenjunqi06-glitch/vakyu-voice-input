@@ -50,6 +50,30 @@ impl Speaker {
         self.language == language && self.requested == english_only(language, natural)
     }
 
+    /// 音色由每句请求携带，英语男女声切换无需重载同一份模型。
+    pub fn configure(&mut self, language: Language, natural: Option<u16>) -> bool {
+        if self.matches(language, natural) {
+            return true;
+        }
+        if self.language == Language::English
+            && language == Language::English
+            && let Some(speaker) = natural
+            && let Backend::Natural(voice) = &mut self.backend
+        {
+            voice.set_speaker(speaker);
+            self.requested = natural;
+            return true;
+        }
+        false
+    }
+
+    pub fn prewarm(&mut self) -> Result<(), String> {
+        match &mut self.backend {
+            Backend::Natural(voice) => voice.prewarm(),
+            Backend::System(_) => Ok(()),
+        }
+    }
+
     pub fn speak(&mut self, text: &str, rate: i32) -> Result<u32, String> {
         if let Backend::Natural(voice) = &mut self.backend {
             match voice.speak(text, rate) {

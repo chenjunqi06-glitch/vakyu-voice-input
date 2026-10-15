@@ -95,7 +95,24 @@ class SpeechVoiceTests(unittest.TestCase):
             natural.synthesize("Hello.", speaker=20, speed=0.8)
             natural.synthesize("Hello.", speaker=5000, speed=0.8)
             natural.synthesize("Hello.", speaker="x", speed=0.8)
-            self.assertEqual([call[1] for call in engine.calls], [20, 0, 0])
+            self.assertEqual([call[1] for call in engine.calls], [20, 0])
+
+    def test_replay_reuses_audio_but_speaker_speed_and_text_invalidate_cache(self):
+        with tempfile.TemporaryDirectory() as directory:
+            natural, engine = voice(directory)
+            first = natural.synthesize("Hello.", 180, 0.8)
+            self.assertIs(natural.synthesize("Hello.", 180, 0.8), first)
+            natural.synthesize("Hello.", 368, 0.8)
+            natural.synthesize("Hello.", 368, 1.0)
+            natural.synthesize("Good morning.", 368, 1.0)
+            natural.synthesize("Hello.", 368, 1.0)
+            self.assertEqual(len(engine.calls), 5)
+
+    def test_warmup_only_generates_a_fixed_phrase(self):
+        with tempfile.TemporaryDirectory() as directory:
+            natural, engine = voice(directory)
+            natural.warmup()
+            self.assertEqual(engine.calls, [("Hello.", 0, 1.0)])
 
     def test_empty_text_is_an_error(self):
         with tempfile.TemporaryDirectory() as directory:

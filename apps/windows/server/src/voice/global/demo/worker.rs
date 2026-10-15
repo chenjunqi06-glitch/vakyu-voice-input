@@ -71,6 +71,17 @@ fn run_initialized(
         }
         match command {
             Some(Command::Shutdown) => break,
+            Some(Command::Prewarm {
+                generation,
+                language,
+                natural,
+            }) if current(desired, generation) && active.is_none() => {
+                let result = prepare(&mut speaker, language, natural)
+                    .and_then(|()| speaker.as_mut().expect("预热播放器已创建").prewarm());
+                if let Err(message) = result {
+                    tracing::warn!(%message, "示范预热未完成，朗读时仍可重试");
+                }
+            }
             Some(Command::Cancel) => {
                 stop(&mut speaker);
                 active = None;
@@ -85,22 +96,11 @@ fn run_initialized(
             }) if current(desired, generation) => {
                 stop(&mut speaker);
                 active = None;
-                if speaker
-                    .as_ref()
-                    .is_some_and(|speaker| !speaker.matches(language, natural))
-                {
-                    speaker = None;
-                }
-                if speaker.is_none() {
-                    match Speaker::new(language, natural) {
-                        Ok(created) => speaker = Some(created),
-                        Err(message) => {
-                            if current(desired, generation) {
-                                send(&results, generation, request_id, Err(message));
-                            }
-                            continue;
-                        }
+                if let Err(message) = prepare(&mut speaker, language, natural) {
+                    if current(desired, generation) {
+                        send(&results, generation, request_id, Err(message));
                     }
+                    continue;
                 }
                 // 创建 COM 对象可能比取消命令慢，回到播放调用前重查原子代次。
                 if !current(desired, generation) {
@@ -150,6 +150,22 @@ fn run_initialized(
 
 fn current(desired: &AtomicU64, generation: u64) -> bool {
     desired.load(Ordering::Acquire) == generation
+}
+
+fn prepare(
+    speaker: &mut Option<Speaker>,
+    language: qingjian_core::Language,
+    natural: Option<u16>,
+) -> Result<(), String> {
+    if speaker
+        .as_mut()
+        .is_some_and(|voice| voice.configure(language, natural))
+    {
+        return Ok(());
+    }
+    *speaker = None;
+    *speaker = Some(Speaker::new(language, natural)?);
+    Ok(())
 }
 
 fn stop(speaker: &mut Option<Speaker>) {

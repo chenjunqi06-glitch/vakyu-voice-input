@@ -75,6 +75,7 @@ pub(super) fn run(
     if controller.config.trigger.enabled {
         controller.voice.prewarm();
     }
+    controller.prewarm_demo();
     tracing::info!(
         enabled = controller.config.trigger.enabled,
         english_practice = controller.config.english_practice,
@@ -129,6 +130,7 @@ pub(super) fn run(
                 }
                 if controller.config.trigger.enabled && !controller.paused {
                     controller.voice.prewarm();
+                    controller.prewarm_demo();
                 }
             }
             Ok(Command::PracticeAction(action)) => controller.practice_action(action),
@@ -239,6 +241,7 @@ impl Controller {
                 {
                     return;
                 }
+                self.prewarm_demo();
                 let captured = self.targets.capture();
                 if let Err(error) = &captured {
                     tracing::warn!(sequence, ?error, "全局语音目标捕获失败");

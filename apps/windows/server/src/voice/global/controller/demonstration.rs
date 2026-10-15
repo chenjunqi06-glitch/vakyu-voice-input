@@ -10,6 +10,24 @@ use super::Controller;
 const PLAYBACK_TAIL: Duration = Duration::from_millis(400);
 
 impl Controller {
+    pub(super) fn prewarm_demo(&mut self) {
+        if !self.config.trigger.enabled
+            || !self.config.english_practice
+            || !self.config.practice_demo
+            || !self.config.learn_english
+            || self.config.natural_voice.is_none()
+        {
+            return;
+        }
+        if self.demo.is_none() {
+            self.demo = EnglishDemo::new().ok();
+        }
+        if let Some(demo) = &mut self.demo {
+            demo.set_natural_voice(self.config.natural_voice);
+            demo.prewarm(self.config.target_language());
+        }
+    }
+
     pub(super) fn start_demonstration(&mut self, english: &str) {
         if !self.config.practice_demo {
             self.start_practice_recording();

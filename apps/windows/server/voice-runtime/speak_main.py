@@ -163,6 +163,7 @@ def main():
         from speech import NaturalVoice
 
         voice = NaturalVoice(args.models / "speech" / "en")
+        voice.warmup()
         player = SoundPlayer()
     except Exception as error:
         emit("fatal", message=str(error) if error.args else "自然人声组件无法加载")

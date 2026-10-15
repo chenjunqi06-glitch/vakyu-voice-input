@@ -37,6 +37,18 @@ pub(super) struct NaturalVoice {
 }
 
 impl NaturalVoice {
+    pub fn set_speaker(&mut self, speaker: u16) {
+        self.speaker = speaker;
+    }
+
+    pub fn prewarm(&mut self) -> Result<(), String> {
+        if !self.process.as_mut().is_some_and(Process::alive) {
+            self.process = None;
+            self.process = Some(Process::start(&self.root, READY_TIMEOUT)?);
+        }
+        Ok(())
+    }
+
     pub fn start(speaker: u16) -> Result<Self, String> {
         let root = crate::voice::neural::runtime_root()
             .filter(|root| available(root))
@@ -62,10 +74,7 @@ impl NaturalVoice {
         })
         .to_string();
         for attempt in 0..2 {
-            if !self.process.as_mut().is_some_and(Process::alive) {
-                self.process = None;
-                self.process = Some(Process::start(&self.root, READY_TIMEOUT)?);
-            }
+            self.prewarm()?;
             let process = self.process.as_mut().expect("刚启动朗读进程");
             if process.send(&line).is_ok() {
                 return Ok(id);

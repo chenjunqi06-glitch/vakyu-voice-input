@@ -49,6 +49,15 @@ impl EnglishDemo {
         self.natural = natural;
     }
 
+    /// 将模型加载交给播放线程；不朗读、不打开音频设备，也不建立活动轮次。
+    pub fn prewarm(&self, language: Language) {
+        let _ = self.commands.send(Command::Prewarm {
+            generation: self.generation,
+            language,
+            natural: self.natural,
+        });
+    }
+
     /// 速率由学习等级决定；-2 为慢速，0 为系统正常速度。
     pub fn speak(&mut self, request_id: u64, text: &str, rate: i32) -> Result<(), String> {
         self.speak_inner(request_id, text, rate, Language::English)

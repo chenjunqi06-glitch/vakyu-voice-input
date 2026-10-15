@@ -3,6 +3,14 @@
 use qingjian_core::Language;
 
 pub(super) enum Command {
+    Prewarm {
+        generation: u64,
+
+        language: Language,
+
+        natural: Option<u16>,
+    },
+
     Speak {
         generation: u64,
 
