@@ -1,131 +1,71 @@
-<p align="center">
-  <img src="assets/icon/windows/vakyu-logo.png" alt="Vakyu" height="120">
-</p>
+<p align="center"><img src="assets/icon/windows/vakyu-icon.png" alt="Vakyu" height="96"></p>
 
-# Vakyu Voice Input · 语音输入法与中英口语跟读
+# Vakyu · 本地语音输入与中英跟读
 
-**按住说话，松开输入；把每天想说的话，变成自己的口语练习。**
+把日常表达变成口语练习：按住快捷键说话，松开转成文字；也可以先听译句、跟读完成，再把原文或译文填入原输入框。由你决定何时发送。
 
-Vakyu 是面向 Windows 与 macOS（Apple Silicon）的开源中文输入法，目前提供两平台的测试版，集成本地语音转文字、双向中英跟读、离线词典和个人词频学习。普通语音在本机 CPU 上识别，不需要显卡、API 密钥或云端语音额度；可选的口语跟读使用你自己的翻译 API。
+**普通语音、跟读翻译、划词翻译和示范朗读均可在本机完成，无需购买 API 额度或填写翻译密钥。** Windows 随包提供识别、翻译和自然人声模型；Mac 使用本机识别模型与 Apple 系统翻译、系统声音。首次准备系统语言或下载安装包需要联网，准备完成后这些功能可离线使用。
 
-**项目来源：** Vakyu 是在 [Qingjian / 青简](https://github.com/qingjian-team/qingjian) 基础上继续迭代的独立开源项目。感谢青简原作者及主要维护者 [@yenharvey](https://github.com/yenharvey) 和[所有贡献者](https://github.com/qingjian-team/qingjian/graphs/contributors)打下的输入法基础。代码沿用 GPL-3.0-or-later，来源版本与修改说明见 [UPSTREAM.md](UPSTREAM.md)。
+## 下载
 
-Open-source Chinese IME for Windows and macOS (Apple Silicon), with offline speech-to-text, push-to-talk dictation, and optional English/Chinese reading practice. [English](README.en.md)
-
-[Windows 下载](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.3) · [Mac 下载](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/macos-build9-20261013) · [详细使用教程](docs/user/getting-started/vakyu-quickstart.md) · [反馈问题](https://github.com/chenjunqi06-glitch/vakyu-voice-input/issues) · [GPL-3.0-or-later](LICENSE)
-
-> **Windows 最新测试版：[0.1.5 Preview 3](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.3)** · 改善语音触发、快捷键保存和后台稳定性，完整 Windows 安装包已同步更新。
-
-> **Mac 测试版已发布：[Apple Silicon 构建 9](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/macos-build9-20261013)（2026-10-13）** · 适用于 macOS 13 及以上，提供 [PKG 安装包](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/download/macos-build9-20261013/vakyu-macos-arm64-build9.pkg)和[对应源码](https://github.com/chenjunqi06-glitch/vakyu-voice-input/tree/macos-build9)。TextEdit、Safari、微信的语音填入已由使用者实测确认，不会自动发送。
-
-## 视频演示
-
-[![点击观看 Vakyu 语音输入与口语跟读演示](assets/screenshots/demo-cover.jpg)](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/download/v0.1.5-preview.3/vakyu-voice-input-demo.mp4)
-
-[观看或下载完整演示视频](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/download/v0.1.5-preview.3/vakyu-voice-input-demo.mp4) · 中文讲解 · 3 分 02 秒 · MP4，约 78 MB。点击上方封面即可打开视频；浏览器也可能直接下载文件。
-
-## 有什么亮点
-
-- **按住快捷键就能说（Windows：左 Alt；Mac：左 Option）**：在文本框中口述，实时预览识别文字与麦克风音量，松开后填入原输入框。支持连续口述与中途停顿，不设五分钟自动截止，也不会自动发送消息。
-- **用自己的话练口语**：说中文、跟读英文；切换方向后，说英文、跟读中文。完成练习才填入原话，练习是自愿开启的独立功能。
-- **读错了不用整句重来**：已通过的词逐个着色并保留进度，可继续补读、跳过当前词或手动点「我读对了」，也能主动整句重读。
-- **适合逐步练习**：文字匹配容错、专名处理、本机示范朗读和经验等级。它帮助练习朗读，不是专业发音评分或考试系统。
-- **点词就能查**：本地词卡显示英文词的中文释义与可用音标，或中文词的拼音与英文释义；使用系统声音播放，不额外调用翻译 API。生僻词覆盖以随包词典为准。
-- **输入与学习一起用**：拼音候选、整句输入、词频学习与候选译词，配合紫色主题、可配置快捷键及托盘快捷开关。
-- **费用可控**：云联想默认关闭；普通拼音和普通语音不消耗 API token。只开跟读时，云端用于本轮文字翻译；同轮补读、查词和示范朗读在本地完成。
-
-<p align="center">
-  <img src="assets/screenshots/voice-input.png" alt="Vakyu 普通语音输入预览" width="400">
-  <img src="assets/screenshots/chinese-practice.png" alt="Vakyu 中文跟读：拼音、逐词进度与继续补读" width="520">
-</p>
-
-这两张截图为程序渲染的示例界面，使用固定演示句子，没有真实聊天内容。
-
-## 下载与安装
-
-### Windows
-
-当前提供 **Windows 测试版**：Windows 10 22H2（19045）或 Windows 11，Intel / AMD **x64** 电脑。
-
-1. 打开本仓库的 [Releases](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases)，在 Assets 下载以 `windows-x86_64-setup.exe` 结尾的文件。GitHub 自动生成的 `Source code` 是源码，不是安装包。
-2. 运行安装包，按提示授权管理员权限并安装。安装包包含语音模型、词典和所需运行库，不用另装 Python、Rust 或开发工具。
-3. 从开始菜单打开「Vakyu 设置」，或右击任务栏右下角的 Vakyu 图标进入设置。
-4. 要使用拼音输入，按 `Win + Space` 选择 Vakyu；独立语音入口只需后台运行，无需先切换输入法。
-
-首次启动需等待本地语音模型就绪，并在 Windows 中允许桌面应用使用麦克风。当前公开安装包尚无可信的发布者代码签名，可能出现 Windows 安全提示；请核对 Release 来源及随附 SHA-256。不要关闭系统安全功能。
-
-### macOS（Apple Silicon）
-
-当前提供 **Mac 构建 9 测试版**，适用于 Apple Silicon（M 系列芯片）、macOS 13 及以上；暂未提供 Intel Mac 安装包。
-
-1. 下载 [vakyu-macos-arm64-build9.pkg](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/download/macos-build9-20261013/vakyu-macos-arm64-build9.pkg)；[发布页](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/macos-build9-20261013)同时提供完整源码与 `SHA256SUMS` 校验文件。
-2. 运行安装包，在“系统设置 → 键盘 → 输入法”添加 Vakyu，并打开 Vakyu 语音设置，按引导授权麦克风、辅助功能等所需权限。
-3. 点入文本框，按住 **左 Option** 说话，松开后填入文字；跟读快捷键以语音设置中保存的组合为准。填入后由你决定是否发送。
-
-本版改善无法读取输入框时的语音启动与填入，增加可关闭的受限粘贴和权限失效提示。TextEdit、Safari、微信的语音填入已由使用者实测确认；这不代表所有应用和全新 Mac 环境均已验证。
-
-测试版尚未经过 Apple Developer ID 签名与公证，升级后可能需要重新添加系统权限。已有用户级 Vakyu 安装时，PKG 会检测同身份副本并停止，请先查看[发布说明](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/macos-build9-20261013)，避免重复安装。源码位于独立的 [macos-build9 分支](https://github.com/chenjunqi06-glitch/vakyu-voice-input/tree/macos-build9)。
-
-## 两种用法，一张表看懂
-
-下表为 Windows 默认快捷键；Mac 普通语音使用左 Option，跟读组合以语音设置为准。
-
-| 模式 | 默认操作 | 结果 | 是否需要 API |
-|---|---|---|---|
-| 普通语音输入 | 点文本框，按住 **左 Alt** 说中文，松开 | 直接填入识别文字 | 不需要 |
-| 学英语 | 开启跟读，按住 **右 Ctrl + 右 Alt** 说中文，松开后读英文译句 | 完成后填入原中文 | 需要翻译 API |
-| 学中文 | 关闭「学习英语」方向开关，按住 **右 Ctrl + 右 Alt** 说英文，松开后读中文译句 | 完成后填入原英文 | 需要翻译 API |
-
-以上均**只填入，不自动按发送键**。`Esc` 取消当前录音或练习。普通语音键与跟读键相互独立，开启跟读后左 Alt 仍直接输入。
-
-跟读默认关闭。在「设置 → 云服务」填写自己的服务地址、模型和 API 密钥，点「测试连接」；然后在「设置 → 快捷键」开启「启用跟读练习 / Reading practice」。「学习英语 / Learn English」控制学习方向，关闭它表示学中文。**无需开启「启用云联想」也能使用跟读翻译**。
-
-完整操作、DeepSeek 配置示例、快捷键冲突说明和排障见 [Vakyu 快速上手](docs/user/getting-started/vakyu-quickstart.md)。
-
-## 平台与兼容性
-
-| 平台 | 当前状态 |
-|---|---|
-| Windows 10 22H2 / Windows 11，原生 x64 | 提供测试版安装包；尚未完成全新 Windows 环境的完整安装与卸载验收 |
-| Windows ARM / 32 位 Windows | 此安装包不支持 |
-| macOS 13 及以上，Apple Silicon | 已发布[构建 9 测试版](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/macos-build9-20261013)，含 PKG 和源码；TextEdit、Safari、微信语音填入已实测，尚未公证 |
-| macOS，Intel | 暂未提供安装包 |
-| iOS | 本仓库的输入法暂无 iOS 版本 |
-| Linux | 保留上游 Fcitx5 输入法代码；本项目新增语音与跟读功能未在 Linux 上验证 |
-
-普通权限的常见可编辑文本框是主要场景。密码框、系统安全界面、管理员权限程序、游戏及部分自绘控件可能不支持，不能保证所有软件都能填入。当前仅支持单个交互登录会话，不适用于多个 Windows 用户同时运行。更新输入法基础组件后，已加载旧组件的应用可能需要重开。
-
-## 隐私与费用
-
-| 功能 | 数据在哪里处理 | 费用 |
+| 平台 | 当前交付 | 要求 |
 |---|---|---|
-| 拼音、词频学习、普通语音识别 | 本机；语音功能不上传或保存录音文件 | 无 API 费用 |
-| 跟读识别、词卡、示范朗读 | 本机 | 无 API 费用 |
-| 跟读句子翻译 | 本轮原文直接发送给你配置的 API 服务商，不经过项目作者的服务器 | 按服务商用量计费 |
-| 可选云联想 | 开启后发送拼音、候选与光标附近文字给该服务商 | 按服务商用量计费 |
+| Windows | [Preview 5 安装包与源码](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.5) | Windows 10 22H2 / Windows 11，Intel / AMD x64 |
+| Mac 新功能版 | [本机翻译合并源码预览](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/macos-local-translation-20261015) | Apple Silicon；系统翻译需要 macOS 15+，先下载中英翻译语言；本次尚未生成或验收新 PKG |
+| Mac 已发布安装包 | [构建 9 PKG](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/macos-build9-20261013) | Apple Silicon，macOS 13+；旧版本，不包含本次本机翻译改动 |
 
-安装包不包含作者密钥或公共免费额度。API 密钥保存在本机；不要提交到 GitHub。输入日志与个人词库也是本地数据，可在设置中管理；提交问题前请检查日志和截图，移除私人文本及密钥。关闭云联想可以避免日常打字触发云端请求，不会关闭独立跟读翻译。
+Windows 下载文件名以 `windows-x86_64-setup.exe` 结尾的附件，运行安装器，然后从开始菜单打开「Vakyu 设置」。完整安装包含词典、运行库和模型，无需另装 Python 或开发工具。拼音输入按 `Win + Space` 切换到 Vakyu；独立语音入口只需后台运行。
 
-## 开发与参与
+Mac 本次源码以已验收构建 9 为基础合入 Claude 的本机翻译与浮窗改动，保留微信等应用的受限粘贴、填入结果核对和权限提示。源码分支为 [macos-local-translation](https://github.com/chenjunqi06-glitch/vakyu-voice-input/tree/macos-local-translation)。旧构建 9 的 TextEdit、Safari、微信验收记录不能替代本次源码的 Mac 编译与真机验收。
 
-- [开发文档](docs/README.md)与[开发约定](docs/contributing.md)
-- [Windows 安装包构建与校验](apps/windows/installer/README.md)
-- [Windows 平台开发](apps/windows/README.md)
-- [macOS 构建 9 源码与构建说明](https://github.com/chenjunqi06-glitch/vakyu-voice-input/tree/macos-build9/apps/macos)
-- [可选 GitHub Actions 工作流示例](docs/github-workflows/README.md)（当前未启用自动 CI）
+## 日常怎么用
 
-欢迎提交兼容性反馈、识别例子和改进。报错时请注明 Vakyu 版本、操作系统版本、目标软件及复现步骤。语音准确度与麦克风、环境、口音有关，不承诺零误识别。旧工程文档部分仍使用 Qingjian / Miracle 名称，Vakyu 的当前使用方式以本页和快速上手为准。
+| 用法 | Windows 默认操作 | 结果 |
+|---|---|---|
+| 普通语音 | 点入文本框，按住左 Alt 说话，松开 | 将识别文字填回原输入框 |
+| 说中文、练英语 | 开启跟读，按住右 Ctrl + 右 Alt 说中文，松开后听示范、读英文 | 读完填入原中文；开启「发英」后填入英文译文 |
+| 说英文、练中文 | 关闭「学习英语」方向开关，用跟读键说英文 | 跟读中文后填入原文或所选译文 |
+| 划词翻译 | 选中文字，点翻译图标 | 本机中英互译 |
 
-## 关于 Vakyu 团队
+Mac 普通语音默认按住左 Option，跟读键以设置页保存的组合为准；右键「服务 → 用 Vakyu 翻译」提供划词翻译。Windows 和 Mac 都只填入文字，不自动按发送键；`Esc` 取消本轮。
 
-我们专注于主动交互式 AI 语言学习，希望让练习自然融入日常表达。
+跟读默认关闭。开启后可在浮窗切换跟读与发译文；已通过的词保留进度，可继续补读、重听、查本地词卡，或主动整句重读。它是日常朗读练习工具，不是专业发音评分或考试系统。
 
-我们的移动产品 **Vakyu AI 语音学习**已上架 Google Play，Apple App Store 版本正在审核中。本仓库维护的是开源项目 **Vakyu Voice Input**，支持平台与安装方式见上文；移动产品的上架状态不代表本仓库提供手机输入法安装包。
+## 这次更新
 
-海外官网：[vakyu.com](https://vakyu.com) · 商业合作微信：**cyx121a**
+- 跟读、说中发英和划词翻译使用本机引擎，去掉翻译 API 的配置门槛。
+- Windows 英语示范使用随包自然人声，女声默认 180、男声 368；切换音色下次示范生效。
+- Windows 提前静默预热朗读模型与推理图，切换男女声复用模型，重听上一句复用内存音频，减少等候。长时间空闲后仍会释放模型内存。
+- Mac 新功能在独立源码分支合入构建 9 的基础，保留原有填入兼容处理；新 PKG 与 Mac 真机验收仍待完成。
 
-## 来源与许可
+本机固定短句测量：优化前模型加载约 1.48 秒、第一次合成约 2.03 秒；静默预热完成后的首次合成约 0.15 秒，重听无需再次合成。这是本次机器的单次测量，不代表所有硬件、长句或完整语音交互耗时。
 
-Vakyu 基于 [Qingjian / 青简](https://github.com/qingjian-team/qingjian) 发展，感谢原作者及主要维护者 [@yenharvey](https://github.com/yenharvey)、qingjian-team 与[所有贡献者](https://github.com/qingjian-team/qingjian/graphs/contributors)。Vakyu 是独立衍生项目，不是青简官方发行版；这些署名不表示上游认可或担保 Vakyu。上游网站提供的安装包也不是本项目安装包。详见[上游与许可说明](UPSTREAM.md)。
+## 隐私与离线使用
 
-项目代码采用 **[GNU GPL-3.0-or-later](LICENSE)**。修改和再分发时需履行 GPL 义务，并保留原作者版权及许可声明。每个 Release 提供对应源码包；第三方程序、运行库、词典与语音模型适用各自许可，详见[数据来源](docs/design/landscape.md)和安装包中的 `licenses`。部分内部目录、包名及兼容路径继续沿用 Qingjian，避免破坏升级和现有用户数据。
+- 语音识别、本机翻译、词卡及示范朗读不需要将录音或句子发送给项目服务器；自然人声缓存只存在内存中，不保存音频文件。
+- 安装包不包含 API 密钥或作者个人配置。个人词库和学习数据留在本机。
+- Windows 随包翻译为 CTranslate2 + OPUS-MT，自然人声为 Piper + sherpa-onnx；Mac 翻译使用 macOS 15+ 的 Translation 框架，需先安装中英语言。
+- 项目仍保留**可选云联想**，默认关闭。主动开启它时会调用你配置的服务；上述离线语音、翻译和跟读不依赖它。
+
+## 兼容范围与测试状态
+
+Windows 提供 x64 测试安装包，不支持此包运行在 32 位 Windows 或 Windows ARM。Mac 本次交付为 Apple Silicon 源码预览，无法把 Windows 上的共享核心测试视为 Mac 安装、麦克风或跨应用验证。iOS 暂无本仓库输入法安装包；Linux 保留上游实现，新增语音功能未验证。
+
+密码框、系统安全界面、管理员权限窗口和部分自绘输入框可能不支持填入。测试安装包尚无可信发布者签名；Mac 开发包尚未公证。请从本仓库 Release 下载并核对 SHA-256。当前分发验证不等于全新系统上的完整安装、卸载和各应用验收。
+
+## 文档与参与
+
+- [Vakyu 快速上手](docs/user/getting-started/vakyu-quickstart.md)
+- [Mac 使用说明](docs/user/getting-started/macos-voice.md)
+- [Windows 打包与验证](apps/windows/installer/README.md)
+- [开发约定](docs/contributing.md)
+
+反馈时请提供版本、操作系统、目标软件和复现步骤，避免上传私人文本、录音和密钥。
+
+## 关于与许可
+
+Vakyu 希望让语言练习融入日常表达。官网：[vakyu.com](https://vakyu.com)。
+
+本项目基于 [Qingjian / 青简](https://github.com/qingjian-team/qingjian)，感谢 [@yenharvey](https://github.com/yenharvey)、qingjian-team 和所有上游贡献者。Vakyu 是独立衍生项目，署名不表示上游认可或担保本发行版，详见 [UPSTREAM.md](UPSTREAM.md)。
+
+代码采用 [GPL-3.0-or-later](LICENSE)，再分发须保留版权及许可并提供对应源码；第三方词典、运行库与模型遵循各自许可，详见随包声明。内部部分目录、包名和兼容路径沿用 Qingjian。
