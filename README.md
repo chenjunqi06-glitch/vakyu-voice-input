@@ -55,7 +55,7 @@ Windows 提供 x64 测试安装包，不支持此包运行在 32 位 Windows 或
 
 ## 文档与参与
 
-- [Vakyu 快速上手](docs/user/getting-started/vakyu-quickstart.md)
+- [Mac 快速上手](docs/user/getting-started/macos-voice.md)
 - [Mac 使用说明](docs/user/getting-started/macos-voice.md)
 - [Windows 打包与验证](apps/windows/installer/README.md)
 - [开发约定](docs/contributing.md)
