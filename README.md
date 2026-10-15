@@ -6,11 +6,15 @@
 
 **普通语音、跟读翻译、划词翻译和示范朗读均可在本机完成，无需购买 API 额度或填写翻译密钥。** Windows 随包提供识别、翻译和自然人声模型；Mac 使用本机识别模型与 Apple 系统翻译、系统声音。首次准备系统语言或下载安装包需要联网，准备完成后这些功能可离线使用。
 
+## 本次更新
+
+Windows Preview 6 修复英语跟读结束后在 Codex 输入框重复填入同一句文字的问题，用户已安装验证修复有效。提交阶段增加防重入保护，保留正文中真实重复的表达；本地模型、音色默认值及已有朗读提速优化保持不变。升级后请彻底退出并重开 Codex，使其加载新版输入法组件。
+
 ## 下载
 
 | 平台 | 当前交付 | 要求 |
 |---|---|---|
-| Windows | [Preview 5 安装包与源码](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.5) | Windows 10 22H2 / Windows 11，Intel / AMD x64 |
+| Windows | [Preview 6 安装包与源码](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/v0.1.5-preview.6) | Windows 10 22H2 / Windows 11，Intel / AMD x64 |
 | Mac 新功能版 | [本机翻译合并源码预览](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/macos-local-translation-20261015) | Apple Silicon；系统翻译需要 macOS 15+，先下载中英翻译语言；本次尚未生成或验收新 PKG |
 | Mac 已发布安装包 | [构建 9 PKG](https://github.com/chenjunqi06-glitch/vakyu-voice-input/releases/tag/macos-build9-20261013) | Apple Silicon，macOS 13+；旧版本，不包含本次本机翻译改动 |
 
