@@ -143,7 +143,9 @@ impl TextService_Impl {
                 deadline_ms,
             }) if self.delivery.request.get() == Some(request) => {
                 self.delivery.committing.set(true);
-                if let Some(anchor) = self.delivery.anchor.borrow().clone() {
+                // 后面的 COM 调用可能重入并清理回投状态，不能把 RefCell 借用带进去。
+                let anchor = self.delivery.anchor.borrow().clone();
+                if let Some(anchor) = anchor {
                     anchor.set_deadline(deadline_ms);
                     if !anchor.committed() && !anchor.focused() {
                         anchor.cancel();
@@ -153,16 +155,15 @@ impl TextService_Impl {
                         && !anchor.committed()
                         && !self.shared.composing()
                         && !self.shared.has_composition()
-                    {
-                        if let Err(error) = request_voice_commit(
+                        && let Err(error) = request_voice_commit(
                             anchor.clone(),
                             self.client_id.get(),
                             self.shared.clone(),
                             text,
-                        ) {
-                            anchor.cancel();
-                            log(&format!("全局语音 TSF 插入失败: {error}"));
-                        }
+                        )
+                    {
+                        anchor.cancel();
+                        log(&format!("全局语音 TSF 插入失败: {error}"));
                     }
                 }
             }
